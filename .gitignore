@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+build
+dist
+.env
+.env.local
+.env*.local
+*.log
+npm-debug.log*
+.DS_Store
+.vercel
+.turbo
+coverage
+drizzle/meta/_journal.json.bak
+dataroom/screenshots/_raw_all

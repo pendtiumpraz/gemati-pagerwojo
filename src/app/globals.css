@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f8faf8;
+  --card: #ffffff;
+}
+
+html {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: #0f172a;
+}
+
+.dark body {
+  background: #0b140f;
+  color: #e8eee8;
+}
+
+.dark {
+  --bg: #0b140f;
+  --card: #0f1a14;
+}
+
+/* Scrollbar halus */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+.dark ::-webkit-scrollbar-thumb { background: #1e2b22; }
+
+/* Toast slide-in */
+@keyframes toastIn {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-toast { animation: toastIn 0.25s ease; }
+
+/* Modal fade */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade { animation: fadeIn 0.2s ease; }
+
+@keyframes scaleIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.animate-scale { animation: scaleIn 0.2s ease; }
+
+/* Right-side drawer slide-in (loop Rule 5: 300ms ease) */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-drawer { animation: slideInRight 0.3s ease; }
+
+/* Leaflet container height fix */
+.leaflet-container { height: 100%; width: 100%; z-index: 0; }
