@@ -14,7 +14,12 @@ export default async function BalitaPage() {
 
   return (
     <Suspense fallback={<div className="p-8 text-slate-400">Memuat...</div>}>
-      <BalitaList canAdd={session.role === "kader"} title="Data Balita" subtitle={subtitle} />
+      <BalitaList
+        canAdd={session.role === "admin" || session.role === "kader"}
+        role={session.role}
+        title="Data Balita"
+        subtitle={subtitle}
+      />
     </Suspense>
   );
 }

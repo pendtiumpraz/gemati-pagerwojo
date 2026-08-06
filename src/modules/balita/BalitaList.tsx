@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Baby, Eye, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
-import { PageHeader, SearchBar, Select, Button, Badge, Card, LABEL_VALIDASI } from "@/components/ui/primitives";
+import { PageHeader, SearchBar, Select, Button, Badge, Card, LABEL_VALIDASI, IconAction, RowActions } from "@/components/ui/primitives";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer, TabsAktifSampah } from "@/components/ui/Drawer";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -43,13 +43,16 @@ function JkBadge({ jk }: { jk: "L" | "P" }) {
 
 export function BalitaList({
   canAdd,
+  role,
   title = "Data Balita",
   subtitle = "Data seluruh balita di Kecamatan Pagerwojo",
 }: {
   canAdd: boolean;
+  role: "admin" | "ppkbd" | "kader";
   title?: string;
   subtitle?: string;
 }) {
+  const canEdit = role === "admin" || role === "ppkbd" || role === "kader";
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -84,11 +87,10 @@ export function BalitaList({
 
   // deep-link: ?add=1 buka drawer tambah, ?edit=<id> buka drawer edit
   useEffect(() => {
-    if (!canAdd) return;
-    if (searchParams.get("add") === "1") {
+    if (canAdd && searchParams.get("add") === "1") {
       openAdd();
       router.replace("/balita");
-    } else {
+    } else if (canEdit) {
       const edit = searchParams.get("edit");
       if (edit && !Number.isNaN(Number(edit))) {
         openEdit(Number(edit));
@@ -96,7 +98,7 @@ export function BalitaList({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, canAdd]);
+  }, [searchParams, canAdd, canEdit]);
 
   // filter toolbar (tab aktif)
   const [filterDesa, setFilterDesa] = useState("all");
@@ -182,33 +184,15 @@ export function BalitaList({
     {
       header: "Aksi",
       cell: (r) => (
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => router.push(`/balita/${r.id}`)}
-            className="text-slate-400 hover:text-primary p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-            title="Lihat detail"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-          {canAdd && (
+        <RowActions>
+          <IconAction icon={Eye} title="Lihat" onClick={() => router.push(`/balita/${r.id}`)} />
+          {canEdit && (
             <>
-              <button
-                onClick={() => openEdit(r.id)}
-                className="text-slate-400 hover:text-primary p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                title="Edit"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setConfirmDel(r)}
-                className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                title="Hapus"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <IconAction icon={Pencil} title="Edit" tone="primary" onClick={() => openEdit(r.id)} />
+              <IconAction icon={Trash2} title="Hapus" tone="danger" onClick={() => setConfirmDel(r)} />
             </>
           )}
-        </div>
+        </RowActions>
       ),
     },
   ];
@@ -222,12 +206,9 @@ export function BalitaList({
     {
       header: "Aksi",
       cell: (r) => (
-        <button
-          onClick={() => doRestore(r.id)}
-          className="inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
-        >
-          <RotateCcw className="w-3.5 h-3.5" /> Pulihkan
-        </button>
+        <RowActions>
+          <IconAction icon={RotateCcw} title="Pulihkan" tone="success" onClick={() => doRestore(r.id)} />
+        </RowActions>
       ),
     },
   ];
@@ -252,7 +233,7 @@ export function BalitaList({
           <div className="flex flex-wrap items-center gap-2">
             {tab === "aktif" && (
               <>
-                {!canAdd && (
+                {role !== "kader" && (
                   <Select
                     value={filterDesa}
                     onChange={(e) => setFilterDesa(e.target.value)}

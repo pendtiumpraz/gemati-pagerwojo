@@ -1,7 +1,44 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { Search, type LucideIcon } from "lucide-react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+
+/* ---------- IconAction (tombol aksi baris berbentuk ikon) ---------- */
+export function IconAction({
+  icon: Icon,
+  title,
+  onClick,
+  tone = "default",
+}: {
+  icon: LucideIcon;
+  title: string;
+  onClick: () => void;
+  tone?: "default" | "primary" | "danger" | "warning" | "success";
+}) {
+  const c = {
+    default: "text-slate-500 hover:bg-slate-100 dark:hover:bg-darkcard dark:text-slate-400",
+    primary: "text-primary hover:bg-primary/10",
+    danger: "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40",
+    warning: "text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40",
+    success: "text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40",
+  }[tone];
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      className={cn("p-1.5 rounded-md transition", c)}
+    >
+      <Icon className="w-4 h-4" />
+    </button>
+  );
+}
+
+/* ---------- RowActions (wadah tombol aksi) ---------- */
+export function RowActions({ children }: { children: React.ReactNode }) {
+  return <div className="flex items-center gap-0.5">{children}</div>;
+}
 
 /* ---------- Button ---------- */
 export function Button({

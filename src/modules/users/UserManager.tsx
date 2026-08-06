@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Users as UsersIcon, CheckCircle, XCircle, Building2, RotateCcw, Trash2 } from "lucide-react";
-import { PageHeader, StatCard, SearchBar, Button, Field, Input, Select, Badge, Card } from "@/components/ui/primitives";
+import { Plus, Users as UsersIcon, CheckCircle, XCircle, Building2, RotateCcw, Trash2, Pencil, Power, PowerOff, KeyRound } from "lucide-react";
+import { PageHeader, StatCard, SearchBar, Button, Field, Input, Select, Badge, Card, IconAction, RowActions } from "@/components/ui/primitives";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer, TabsAktifSampah } from "@/components/ui/Drawer";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -167,12 +167,17 @@ export function UserManager({
     {
       header: "Aksi",
       cell: (r) => (
-        <div className="flex items-center gap-2 text-xs">
-          <button onClick={() => openEdit(r)} className="text-primary hover:underline font-medium">Edit</button>
-          <button onClick={() => doToggle(r.id)} className="text-slate-500 hover:underline">{r.active ? "Nonaktifkan" : "Aktifkan"}</button>
-          <button onClick={() => doReset(r.id)} className="text-slate-500 hover:underline">Reset Password</button>
-          <button onClick={() => setConfirmDel(r)} className="text-red-500 hover:underline">Hapus</button>
-        </div>
+        <RowActions>
+          <IconAction icon={Pencil} title="Edit" tone="primary" onClick={() => openEdit(r)} />
+          <IconAction
+            icon={r.active ? PowerOff : Power}
+            title={r.active ? "Nonaktifkan" : "Aktifkan"}
+            tone={r.active ? "warning" : "success"}
+            onClick={() => doToggle(r.id)}
+          />
+          <IconAction icon={KeyRound} title="Reset Password" onClick={() => doReset(r.id)} />
+          <IconAction icon={Trash2} title="Hapus" tone="danger" onClick={() => setConfirmDel(r)} />
+        </RowActions>
       ),
     },
   ];
@@ -185,9 +190,9 @@ export function UserManager({
     {
       header: "Aksi",
       cell: (r) => (
-        <button onClick={() => doRestore(r.id)} className="inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium">
-          <RotateCcw className="w-3.5 h-3.5" /> Pulihkan
-        </button>
+        <RowActions>
+          <IconAction icon={RotateCcw} title="Pulihkan" tone="success" onClick={() => doRestore(r.id)} />
+        </RowActions>
       ),
     },
   ];

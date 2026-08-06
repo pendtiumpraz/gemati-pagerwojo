@@ -1,6 +1,90 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { desa, balita, pendampingan, pengukuran, users } from "@/db/schema";
+import { combine, searchCond, softDeleteCond, paginate } from "@/lib/query";
+
+export type DesaInput = {
+  nama: string;
+  kecamatan?: string | null;
+  kabupaten?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+};
+
+/** Daftar desa untuk modul CRUD (tab Aktif/Sampah) — beda dari listDesaAgregat (statistik) */
+export async function listDesaCrud(opts: {
+  search?: string;
+  trashed?: boolean;
+  page: number;
+  pageSize: number;
+}) {
+  const where = combine(
+    softDeleteCond(desa.deleted_at, opts.trashed),
+    searchCond(opts.search, [desa.nama, desa.kecamatan])
+  );
+  const res = await paginate<typeof desa.$inferSelect>({
+    table: desa,
+    where,
+    orderBy: desc(desa.created_at),
+    page: opts.page,
+    pageSize: opts.pageSize,
+  });
+  const data = res.data.map((d) => ({
+    id: d.id,
+    nama: d.nama,
+    kecamatan: d.kecamatan,
+    kabupaten: d.kabupaten,
+    lat: d.lat,
+    lng: d.lng,
+  }));
+  return { ...res, data };
+}
+
+export async function getDesa(id: number) {
+  const rows = await db.select().from(desa).where(eq(desa.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createDesa(input: DesaInput) {
+  const nama = input.nama?.trim();
+  if (!nama) throw new Error("Nama desa wajib diisi");
+  const rows = await db
+    .insert(desa)
+    .values({
+      nama,
+      kecamatan: input.kecamatan?.trim() || "Pagerwojo",
+      kabupaten: input.kabupaten?.trim() || "Tulungagung",
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
+    })
+    .returning();
+  return rows[0];
+}
+
+export async function updateDesa(id: number, input: Partial<DesaInput>) {
+  const patch: Record<string, unknown> = { updated_at: new Date() };
+  if (input.nama !== undefined) {
+    const nama = input.nama?.trim();
+    if (!nama) throw new Error("Nama desa wajib diisi");
+    patch.nama = nama;
+  }
+  if (input.kecamatan !== undefined) patch.kecamatan = input.kecamatan?.trim() || "Pagerwojo";
+  if (input.kabupaten !== undefined) patch.kabupaten = input.kabupaten?.trim() || "Tulungagung";
+  if (input.lat !== undefined) patch.lat = input.lat ?? null;
+  if (input.lng !== undefined) patch.lng = input.lng ?? null;
+
+  const rows = await db.update(desa).set(patch).where(eq(desa.id, id)).returning();
+  if (!rows[0]) throw new Error("Desa tidak ditemukan");
+  return rows[0];
+}
+
+export async function softDeleteDesa(id: number) {
+  await db.update(desa).set({ deleted_at: new Date() }).where(eq(desa.id, id));
+}
+
+export async function restoreDesa(id: number) {
+  await db.update(desa).set({ deleted_at: null }).where(eq(desa.id, id));
+}
 
 /** Daftar desa ringkas untuk select */
 export async function listDesaRingkas() {

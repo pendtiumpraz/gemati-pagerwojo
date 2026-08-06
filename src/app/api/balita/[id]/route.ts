@@ -20,10 +20,11 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
 
 export async function PUT(req: NextRequest, { params }: Ctx) {
   return handle(async () => {
-    const session = await requireAuth(["admin", "kader"]);
+    const session = await requireAuth(["admin", "ppkbd", "kader"]);
     const { id } = await params;
     const b = await getBalita(Number(id));
     if (!b) return notFound("Balita tidak ditemukan");
+    if (session.role === "ppkbd" && b.desa_id !== session.desa_id) return forbidden();
     if (session.role === "kader" && b.kader_id !== session.id) return forbidden();
 
     const body = await req.json().catch(() => ({}));
@@ -39,10 +40,11 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
   return handle(async () => {
-    const session = await requireAuth(["admin", "kader"]);
+    const session = await requireAuth(["admin", "ppkbd", "kader"]);
     const { id } = await params;
     const b = await getBalita(Number(id));
     if (!b) return notFound("Balita tidak ditemukan");
+    if (session.role === "ppkbd" && b.desa_id !== session.desa_id) return forbidden();
     if (session.role === "kader" && b.kader_id !== session.id) return forbidden();
 
     await softDeleteBalita(Number(id));

@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Ruler, Plus, RotateCcw } from "lucide-react";
-import { PageHeader, Card, Badge, Button, SearchBar, Select, LABEL_VALIDASI } from "@/components/ui/primitives";
+import { Ruler, Plus, RotateCcw, Pencil, Trash2 } from "lucide-react";
+import { PageHeader, Card, Badge, Button, SearchBar, Select, LABEL_VALIDASI, RowActions, IconAction } from "@/components/ui/primitives";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer, TabsAktifSampah } from "@/components/ui/Drawer";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -146,14 +146,10 @@ export function PengukuranList({
           {
             header: "Aksi",
             cell: (r: PengukuranRow) => (
-              <div className="flex items-center gap-2 text-xs">
-                <button onClick={() => openEdit(r)} className="text-primary hover:underline font-medium">
-                  Edit
-                </button>
-                <button onClick={() => setConfirmDel(r)} className="text-red-500 hover:underline">
-                  Hapus
-                </button>
-              </div>
+              <RowActions>
+                <IconAction icon={Pencil} title="Edit" tone="primary" onClick={() => openEdit(r)} />
+                <IconAction icon={Trash2} title="Hapus" tone="danger" onClick={() => setConfirmDel(r)} />
+              </RowActions>
             ),
           },
         ]
@@ -169,12 +165,9 @@ export function PengukuranList({
     {
       header: "Aksi",
       cell: (r) => (
-        <button
-          onClick={() => doRestore(r.id)}
-          className="inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
-        >
-          <RotateCcw className="w-3.5 h-3.5" /> Pulihkan
-        </button>
+        <RowActions>
+          <IconAction icon={RotateCcw} title="Pulihkan" tone="success" onClick={() => doRestore(r.id)} />
+        </RowActions>
       ),
     },
   ];
