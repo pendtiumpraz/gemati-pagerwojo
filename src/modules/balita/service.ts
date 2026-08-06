@@ -1,8 +1,9 @@
-import { and, eq, isNull, desc, sql } from "drizzle-orm";
+import { and, eq, isNull, desc, sql, or, ilike } from "drizzle-orm";
 import { db } from "@/db";
 import { balita, desa, posyandu, users, pendampingan, pengukuran } from "@/db/schema";
-import { combine, searchCond, softDeleteCond, paginate } from "@/lib/query";
+import { combine, softDeleteCond, paginate } from "@/lib/query";
 import { hitungUmur } from "@/lib/utils";
+import { encryptPII, decryptPII, blindIndex } from "@/lib/crypto";
 
 export type BalitaInput = {
   nik: string;
@@ -45,6 +46,8 @@ function enrichRow(
 ) {
   return {
     ...b,
+    nik: decryptPII(b.nik), // dekripsi PII saat baca
+    no_hp: decryptPII(b.no_hp),
     desa_nama: b.desa_id ? maps.desa.get(b.desa_id) ?? null : null,
     posyandu_nama: b.posyandu_id ? maps.posyandu.get(b.posyandu_id) ?? null : null,
     kader_nama: b.kader_id ? maps.kader.get(b.kader_id) ?? null : null,
@@ -69,10 +72,22 @@ export async function listBalita(opts: {
     scopeCond = opts.kader_id ? eq(balita.kader_id, opts.kader_id) : sql`false`;
   }
 
+  // NIK terenkripsi → cari via nik_hash (exact) bila query numerik; selain itu nama/ibu
+  let searchC;
+  if (opts.search) {
+    const term = opts.search.trim();
+    const conds = [ilike(balita.nama, `%${term}%`), ilike(balita.nama_ibu, `%${term}%`)];
+    if (/^\d{4,}$/.test(term)) {
+      const h = blindIndex(term);
+      if (h) conds.push(eq(balita.nik_hash, h));
+    }
+    searchC = or(...conds);
+  }
+
   const where = combine(
     softDeleteCond(balita.deleted_at, opts.trashed),
     scopeCond,
-    searchCond(opts.search, [balita.nama, balita.nik, balita.nama_ibu])
+    searchC
   );
 
   const res = await paginate<BalitaRow>({
@@ -141,14 +156,15 @@ export async function createBalita(input: BalitaInput, kaderId?: number | null) 
   const rows = await db
     .insert(balita)
     .values({
-      nik: input.nik,
+      nik: encryptPII(input.nik)!, // enkripsi PII at-rest
+      nik_hash: blindIndex(input.nik),
       nama: input.nama,
       jenis_kelamin: input.jenis_kelamin,
       tempat_lahir: input.tempat_lahir ?? null,
       tanggal_lahir: input.tanggal_lahir,
       nama_ayah: input.nama_ayah ?? null,
       nama_ibu: input.nama_ibu,
-      no_hp: input.no_hp ?? null,
+      no_hp: encryptPII(input.no_hp),
       alamat: input.alamat ?? null,
       rt: input.rt ?? null,
       rw: input.rw ?? null,
@@ -169,13 +185,19 @@ export async function updateBalita(id: number, input: Partial<BalitaInput>) {
 
   const patch: Record<string, unknown> = { updated_at: new Date() };
   const fields: (keyof BalitaInput)[] = [
-    "nik", "nama", "jenis_kelamin", "tempat_lahir", "tanggal_lahir",
-    "nama_ayah", "nama_ibu", "no_hp", "alamat", "rt", "rw", "dusun",
+    "nama", "jenis_kelamin", "tempat_lahir", "tanggal_lahir",
+    "nama_ayah", "nama_ibu", "alamat", "rt", "rw", "dusun",
     "desa_id", "posyandu_id", "foto", "status",
   ];
   for (const f of fields) {
     if (input[f] !== undefined) patch[f] = input[f];
   }
+  // PII terenkripsi
+  if (input.nik !== undefined) {
+    patch.nik = encryptPII(input.nik);
+    patch.nik_hash = blindIndex(input.nik);
+  }
+  if (input.no_hp !== undefined) patch.no_hp = encryptPII(input.no_hp);
 
   const rows = await db.update(balita).set(patch).where(eq(balita.id, id)).returning();
   if (!rows[0]) throw new Error("Balita tidak ditemukan");

@@ -61,6 +61,7 @@ export function Laporan() {
   const balitaCols: Column<AnyRow>[] = [
     {
       header: "Nama Balita",
+      sortValue: (r) => r.nama ?? "",
       cell: (r) => (
         <div>
           <div className="font-medium text-heading dark:text-slate-200">{r.nama}</div>
@@ -68,28 +69,28 @@ export function Laporan() {
         </div>
       ),
     },
-    { header: "JK", cell: (r) => <Badge tone="default">{r.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}</Badge> },
-    { header: "Umur", cell: (r) => r.umur ?? "-" },
-    { header: "Desa", cell: (r) => r.desa_nama ?? "-" },
-    { header: "Nama Ibu", cell: (r) => r.nama_ibu ?? "-" },
-    { header: "Validasi", cell: (r) => <Badge tone={validasiTone[r.validasi_status] || "default"}>{r.validasi_status ?? "-"}</Badge> },
+    { header: "JK", sortValue: (r) => r.jenis_kelamin ?? "", cell: (r) => <Badge tone="default">{r.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}</Badge> },
+    { header: "Umur", sortValue: (r) => r.umur ?? "", cell: (r) => r.umur ?? "-" },
+    { header: "Desa", sortValue: (r) => r.desa_nama ?? "", cell: (r) => r.desa_nama ?? "-" },
+    { header: "Nama Ibu", sortValue: (r) => r.nama_ibu ?? "", cell: (r) => r.nama_ibu ?? "-" },
+    { header: "Validasi", sortValue: (r) => r.validasi_status ?? "", cell: (r) => <Badge tone={validasiTone[r.validasi_status] || "default"}>{r.validasi_status ?? "-"}</Badge> },
   ];
 
   const pendampinganCols: Column<AnyRow>[] = [
-    { header: "Tanggal", cell: (r) => (r.tanggal ? formatTanggal(r.tanggal) : "-") },
-    { header: "Balita", cell: (r) => r.balita_nama ?? r.nama ?? `#${r.balita_id}` },
-    { header: "Hari", cell: (r) => r.hari_ke ?? "-" },
+    { header: "Tanggal", sortValue: (r) => r.tanggal ?? "", cell: (r) => (r.tanggal ? formatTanggal(r.tanggal) : "-") },
+    { header: "Balita", sortValue: (r) => r.balita_nama ?? r.nama ?? "", cell: (r) => r.balita_nama ?? r.nama ?? `#${r.balita_id}` },
+    { header: "Hari", sortValue: (r) => r.hari_ke ?? 0, cell: (r) => r.hari_ke ?? "-" },
     { header: "Makan Telur", cell: (r) => (r.makan_telur ? `Ya${r.jumlah_butir ? ` (${r.jumlah_butir} butir)` : ""}` : "Tidak") },
-    { header: "Pendamping", cell: (r) => r.nama_pendamping ?? r.kader_nama ?? "-" },
-    { header: "Validasi", cell: (r) => <Badge tone={validasiTone[r.validasi_status] || "default"}>{r.validasi_status ?? "-"}</Badge> },
+    { header: "Pendamping", sortValue: (r) => r.nama_pendamping ?? r.kader_nama ?? "", cell: (r) => r.nama_pendamping ?? r.kader_nama ?? "-" },
+    { header: "Validasi", sortValue: (r) => r.validasi_status ?? "", cell: (r) => <Badge tone={validasiTone[r.validasi_status] || "default"}>{r.validasi_status ?? "-"}</Badge> },
   ];
 
   const pengukuranCols: Column<AnyRow>[] = [
-    { header: "Tanggal", cell: (r) => (r.tanggal ? formatTanggal(r.tanggal) : "-") },
-    { header: "Balita", cell: (r) => r.balita_nama ?? r.nama ?? `#${r.balita_id}` },
-    { header: "BB", cell: (r) => (r.berat_badan != null ? `${r.berat_badan} kg` : "-") },
-    { header: "TB", cell: (r) => (r.tinggi_badan != null ? `${r.tinggi_badan} cm` : "-") },
-    { header: "Status Gizi", cell: (r) => r.status_gizi ?? "-" },
+    { header: "Tanggal", sortValue: (r) => r.tanggal ?? "", cell: (r) => (r.tanggal ? formatTanggal(r.tanggal) : "-") },
+    { header: "Balita", sortValue: (r) => r.balita_nama ?? r.nama ?? "", cell: (r) => r.balita_nama ?? r.nama ?? `#${r.balita_id}` },
+    { header: "BB", sortValue: (r) => r.berat_badan ?? 0, cell: (r) => (r.berat_badan != null ? `${r.berat_badan} kg` : "-") },
+    { header: "TB", sortValue: (r) => r.tinggi_badan ?? 0, cell: (r) => (r.tinggi_badan != null ? `${r.tinggi_badan} cm` : "-") },
+    { header: "Status Gizi", sortValue: (r) => r.status_gizi ?? "", cell: (r) => r.status_gizi ?? "-" },
     {
       header: "Risiko",
       cell: (r) =>
@@ -99,7 +100,7 @@ export function Laporan() {
           <span className="text-slate-500">Normal</span>
         ),
     },
-    { header: "Validasi", cell: (r) => <Badge tone={validasiTone[r.validasi_status] || "default"}>{r.validasi_status ?? "-"}</Badge> },
+    { header: "Validasi", sortValue: (r) => r.validasi_status ?? "", cell: (r) => <Badge tone={validasiTone[r.validasi_status] || "default"}>{r.validasi_status ?? "-"}</Badge> },
   ];
 
   const active = useMemo(() => {

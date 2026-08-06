@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch, useList } from "@/lib/useApi";
 import { inisial } from "@/lib/utils";
+import { maskPhone, maskEmail } from "@/lib/mask";
 
 type Row = {
   id: number; nama: string; username: string; role: string;
@@ -58,9 +59,17 @@ export function UserManager({
     reloadTrash();
   }
 
+  const [filterStatus, setFilterStatus] = useState<"all" | "aktif" | "nonaktif">("all");
+  const [filterRole, setFilterRole] = useState<"all" | "admin" | "ppkbd" | "kader">("all");
+
   const rows = (data?.data || []).filter((r) => {
     const q = search.toLowerCase();
-    return !q || r.nama.toLowerCase().includes(q) || r.username.toLowerCase().includes(q) || (r.email || "").toLowerCase().includes(q);
+    const matchSearch =
+      !q || r.nama.toLowerCase().includes(q) || r.username.toLowerCase().includes(q) || (r.email || "").toLowerCase().includes(q);
+    const matchStatus =
+      filterStatus === "all" || (filterStatus === "aktif" ? r.active : !r.active);
+    const matchRole = filterRole === "all" || r.role === filterRole;
+    return matchSearch && matchStatus && matchRole;
   });
 
   const stats = useMemo(() => {
@@ -134,6 +143,7 @@ export function UserManager({
   const aktifColumns: Column<Row>[] = [
     {
       header: "Nama",
+      sortValue: (r) => r.nama,
       cell: (r) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center shrink-0">
@@ -146,14 +156,14 @@ export function UserManager({
         </div>
       ),
     },
-    ...(showRole ? [{ header: "Role", cell: (r: Row) => <Badge tone={ROLE_TONE[r.role]}>{ROLE_LABEL[r.role]}</Badge> }] : []),
-    { header: "Desa", cell: (r) => r.desa_nama || (r.role === "admin" ? "Kecamatan" : "-") },
-    { header: "No. HP", cell: (r) => r.phone || "-" },
-    { header: "Email", cell: (r) => <span className="text-slate-500">{r.email || "-"}</span> },
+    ...(showRole ? [{ header: "Role", sortValue: (r: Row) => r.role, cell: (r: Row) => <Badge tone={ROLE_TONE[r.role]}>{ROLE_LABEL[r.role]}</Badge> }] : []),
+    { header: "Desa", sortValue: (r) => r.desa_nama || "", cell: (r) => r.desa_nama || (r.role === "admin" ? "Kecamatan" : "-") },
+    { header: "No. HP", cell: (r) => <span className="font-mono text-xs">{maskPhone(r.phone)}</span> },
+    { header: "Email", cell: (r) => <span className="text-slate-500">{maskEmail(r.email)}</span> },
     ...(!showRole
-      ? [{ header: countLabel, cell: (r: Row) => <Badge tone="default">{r.balita_count ?? 0} {role === "ppkbd" ? "kader" : "balita"}</Badge> }]
+      ? [{ header: countLabel, sortValue: (r: Row) => r.balita_count ?? 0, cell: (r: Row) => <Badge tone="default">{r.balita_count ?? 0} {role === "ppkbd" ? "kader" : "balita"}</Badge> }]
       : []),
-    { header: "Status", cell: (r) => <Badge tone={r.active ? "aktif" : "nonaktif"}>{r.active ? "Aktif" : "Nonaktif"}</Badge> },
+    { header: "Status", sortValue: (r) => (r.active ? 1 : 0), cell: (r) => <Badge tone={r.active ? "aktif" : "nonaktif"}>{r.active ? "Aktif" : "Nonaktif"}</Badge> },
     {
       header: "Aksi",
       cell: (r) => (
@@ -204,7 +214,34 @@ export function UserManager({
             onChange={setTab}
             countSampah={trashData?.data?.length}
           />
-          <SearchBar value={search} onChange={setSearch} placeholder="Cari nama atau username..." />
+          <div className="flex flex-wrap items-center gap-2">
+            {tab === "aktif" && (
+              <>
+                {showRole && (
+                  <Select
+                    value={filterRole}
+                    onChange={(e) => setFilterRole(e.target.value as any)}
+                    className="w-auto py-2 text-sm"
+                  >
+                    <option value="all">Semua Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="ppkbd">PPKBD</option>
+                    <option value="kader">Kader (KPK)</option>
+                  </Select>
+                )}
+                <Select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as any)}
+                  className="w-auto py-2 text-sm"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="aktif">Aktif</option>
+                  <option value="nonaktif">Nonaktif</option>
+                </Select>
+              </>
+            )}
+            <SearchBar value={search} onChange={setSearch} placeholder="Cari nama atau username..." />
+          </div>
         </div>
         <DataTable
           columns={tab === "aktif" ? aktifColumns : sampahColumns}

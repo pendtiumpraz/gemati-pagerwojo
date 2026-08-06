@@ -94,14 +94,15 @@ export const balita = pgTable(
   "balita",
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
-    nik: varchar("nik", { length: 20 }).notNull(),
+    nik: varchar("nik", { length: 255 }).notNull(), // terenkripsi (AES-GCM) — panjang lebih besar
+    nik_hash: varchar("nik_hash", { length: 64 }), // blind index (HMAC) untuk search/unik
     nama: varchar("nama", { length: 150 }).notNull(),
     jenis_kelamin: varchar("jenis_kelamin", { length: 1 }).notNull(), // L|P
     tempat_lahir: varchar("tempat_lahir", { length: 120 }),
     tanggal_lahir: varchar("tanggal_lahir", { length: 10 }).notNull(), // YYYY-MM-DD
     nama_ayah: varchar("nama_ayah", { length: 150 }),
     nama_ibu: varchar("nama_ibu", { length: 150 }).notNull(),
-    no_hp: varchar("no_hp", { length: 30 }),
+    no_hp: varchar("no_hp", { length: 255 }), // terenkripsi (AES-GCM)
     alamat: text("alamat"),
     rt: varchar("rt", { length: 10 }),
     rw: varchar("rw", { length: 10 }),
@@ -117,7 +118,7 @@ export const balita = pgTable(
     deleted_at: timestamp("deleted_at"),
   },
   (t) => ({
-    idxNik: index("idx_balita_nik").on(t.nik),
+    idxNikHash: index("idx_balita_nik_hash").on(t.nik_hash),
     idxDesa: index("idx_balita_desa_id").on(t.desa_id),
     idxKader: index("idx_balita_kader_id").on(t.kader_id),
     idxValidasi: index("idx_balita_validasi").on(t.validasi_status),

@@ -64,6 +64,7 @@ export function DesaList() {
   const columns: Column<DesaAgg>[] = [
     {
       header: "Desa",
+      sortValue: (d) => d.nama,
       cell: (d) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -76,21 +77,23 @@ export function DesaList() {
         </div>
       ),
     },
-    { header: "Balita", cell: (d) => d.balita },
-    { header: "Pendampingan", cell: (d) => d.pendampingan },
-    { header: "Valid", cell: (d) => d.valid },
+    { header: "Balita", sortValue: (d) => d.balita, cell: (d) => d.balita },
+    { header: "Pendampingan", sortValue: (d) => d.pendampingan, cell: (d) => d.pendampingan },
+    { header: "Valid", sortValue: (d) => d.valid, cell: (d) => d.valid },
     {
       header: "Persentase",
+      sortValue: (d) => d.persentase,
       cell: (d) => <Badge tone="disetujui">{d.persentase}%</Badge>,
     },
     {
       header: "Risiko Stunting",
+      sortValue: (d) => d.risiko_stunting,
       cell: (d) => (
         <span className="font-medium text-red-600 dark:text-red-400">{d.risiko_stunting}</span>
       ),
     },
-    { header: "Rata-rata BB", cell: (d) => `${d.rata_bb} kg` },
-    { header: "Rata-rata TB", cell: (d) => `${d.rata_tb} cm` },
+    { header: "Rata-rata BB", sortValue: (d) => d.rata_bb, cell: (d) => `${d.rata_bb} kg` },
+    { header: "Rata-rata TB", sortValue: (d) => d.rata_tb, cell: (d) => `${d.rata_tb} cm` },
   ];
 
   return (

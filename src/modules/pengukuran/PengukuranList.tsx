@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Ruler, Plus, RotateCcw } from "lucide-react";
-import { PageHeader, Card, Badge, Button, SearchBar, LABEL_VALIDASI } from "@/components/ui/primitives";
+import { PageHeader, Card, Badge, Button, SearchBar, Select, LABEL_VALIDASI } from "@/components/ui/primitives";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer, TabsAktifSampah } from "@/components/ui/Drawer";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -46,6 +46,7 @@ export function PengukuranList({
 
   const [tab, setTab] = useState<"aktif" | "sampah">("aktif");
   const [search, setSearch] = useState("");
+  const [filterValidasi, setFilterValidasi] = useState<"all" | "menunggu" | "disetujui" | "ditolak">("all");
   const url =
     tab === "aktif" ? "/api/pengukuran?pageSize=200" : "/api/pengukuran/trashed?pageSize=200";
   const { data, loading, reload } = useList<{ data: PengukuranRow[] }>(url);
@@ -98,13 +99,16 @@ export function PengukuranList({
 
   const rows = (data?.data || []).filter((r) => {
     const q = search.toLowerCase();
-    return !q || (r.balita_nama || "").toLowerCase().includes(q);
+    const matchSearch = !q || (r.balita_nama || "").toLowerCase().includes(q);
+    const matchValidasi = tab === "sampah" || filterValidasi === "all" || r.validasi_status === filterValidasi;
+    return matchSearch && matchValidasi;
   });
 
   const baseColumns: Column<PengukuranRow>[] = [
-    { header: "Tanggal", cell: (r) => <span className="whitespace-nowrap">{formatTanggal(r.tanggal)}</span> },
+    { header: "Tanggal", sortValue: (r) => r.tanggal, cell: (r) => <span className="whitespace-nowrap">{formatTanggal(r.tanggal)}</span> },
     {
       header: "Balita",
+      sortValue: (r) => r.balita_nama || "",
       cell: (r) => (
         <div>
           <div className="font-medium text-heading dark:text-slate-200">{r.balita_nama || "-"}</div>
@@ -114,11 +118,11 @@ export function PengukuranList({
         </div>
       ),
     },
-    { header: "BB (kg)", cell: (r) => r.berat_badan },
-    { header: "TB (cm)", cell: (r) => r.tinggi_badan },
+    { header: "BB (kg)", sortValue: (r) => r.berat_badan ?? 0, cell: (r) => r.berat_badan },
+    { header: "TB (cm)", sortValue: (r) => r.tinggi_badan ?? 0, cell: (r) => r.tinggi_badan },
     { header: "Lingkar Kepala", cell: (r) => (r.lingkar_kepala != null ? `${r.lingkar_kepala} cm` : "-") },
     { header: "LILA", cell: (r) => (r.lingkar_lengan_atas != null ? `${r.lingkar_lengan_atas} cm` : "-") },
-    { header: "Z-Score", cell: (r) => <span className="font-medium">{r.z_score != null ? r.z_score : "-"}</span> },
+    { header: "Z-Score", sortValue: (r) => r.z_score ?? 0, cell: (r) => <span className="font-medium">{r.z_score != null ? r.z_score : "-"}</span> },
     {
       header: "Status Gizi",
       cell: (r) =>
@@ -130,6 +134,7 @@ export function PengukuranList({
     },
     {
       header: "Validasi",
+      sortValue: (r) => r.validasi_status,
       cell: (r) => <Badge tone={r.validasi_status}>{LABEL_VALIDASI[r.validasi_status]}</Badge>,
     },
   ];
@@ -197,7 +202,21 @@ export function PengukuranList({
             </div>
             <TabsAktifSampah value={tab} onChange={setTab} countSampah={trashData?.data?.length} />
           </div>
-          <SearchBar value={search} onChange={setSearch} placeholder="Cari balita..." />
+          <div className="flex flex-wrap items-center gap-2">
+            {tab === "aktif" && (
+              <Select
+                value={filterValidasi}
+                onChange={(e) => setFilterValidasi(e.target.value as any)}
+                className="w-auto py-2 text-sm"
+              >
+                <option value="all">Semua Validasi</option>
+                <option value="menunggu">Menunggu</option>
+                <option value="disetujui">Disetujui</option>
+                <option value="ditolak">Ditolak</option>
+              </Select>
+            )}
+            <SearchBar value={search} onChange={setSearch} placeholder="Cari balita..." />
+          </div>
         </div>
         <DataTable
           columns={tab === "aktif" ? aktifColumns : sampahColumns}

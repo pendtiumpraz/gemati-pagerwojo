@@ -106,3 +106,5 @@
 | 2026-08-05 | 04 | Semua halaman 3 role (via 1 pola + 4 sub-agent paralel) |
 | 2026-08-05 | 05 | Audit + `audit-report.md`, tambah endpoint `/trashed` yang kurang, buat file workflow loop |
 | 2026-08-06 | 05 | Distandarkan ke loop: right-drawer (Rule 5) + CRUD satu-halaman (Rule 4) + tab Sampah/Pulihkan (Rule 3), bump Next.js, rate-limit login, halaman error/404. Semua isu audit ✅ resolved. Build + CRUD/restore terverifikasi. |
+| 2026-08-06 | 05 | Deploy: push GitHub `pendtiumpraz/gemati-pagerwojo` + `vercel.json` (framework Next.js). `.env.example` + rotate SESSION_SECRET. |
+| 2026-08-06 | 05 | **Proteksi data**: enkripsi PII at-rest (NIK & no_hp AES-256-GCM + blind index) + masking NIK/HP/email di UI. **Tabel**: pagination + sorting + filter di semua list. Migrasi 0001 + re-seed terenkripsi. |

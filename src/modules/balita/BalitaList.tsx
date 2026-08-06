@@ -1,13 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Baby, Eye, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
-import { PageHeader, SearchBar, Button, Badge, Card, LABEL_VALIDASI } from "@/components/ui/primitives";
+import { PageHeader, SearchBar, Select, Button, Badge, Card, LABEL_VALIDASI } from "@/components/ui/primitives";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer, TabsAktifSampah } from "@/components/ui/Drawer";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch, useList } from "@/lib/useApi";
+import { maskNik, maskPhone } from "@/lib/mask";
 import { BalitaForm } from "./BalitaForm";
 
 type Row = {
@@ -19,6 +20,8 @@ type Row = {
   status: string;
   validasi_status: string;
   umur: string;
+  tanggal_lahir?: string | null;
+  no_hp?: string | null;
   desa_nama?: string | null;
   posyandu_nama?: string | null;
 };
@@ -95,14 +98,31 @@ export function BalitaList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, canAdd]);
 
+  // filter toolbar (tab aktif)
+  const [filterDesa, setFilterDesa] = useState("all");
+  const [filterValidasi, setFilterValidasi] = useState<"all" | "menunggu" | "disetujui" | "ditolak">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "aktif" | "nonaktif">("all");
+  const [filterJk, setFilterJk] = useState<"all" | "L" | "P">("all");
+
+  // daftar desa unik dari data (untuk filter admin/ppkbd)
+  const desaOpts = useMemo(() => {
+    const set = new Set<string>();
+    (data?.data || []).forEach((r) => r.desa_nama && set.add(r.desa_nama));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "id"));
+  }, [data]);
+
   const rows = (data?.data || []).filter((r) => {
     const q = search.toLowerCase();
-    return (
+    const matchSearch =
       !q ||
       r.nama.toLowerCase().includes(q) ||
       r.nik.toLowerCase().includes(q) ||
-      (r.nama_ibu || "").toLowerCase().includes(q)
-    );
+      (r.nama_ibu || "").toLowerCase().includes(q);
+    const matchDesa = filterDesa === "all" || (r.desa_nama || "") === filterDesa;
+    const matchValidasi = filterValidasi === "all" || r.validasi_status === filterValidasi;
+    const matchStatus = filterStatus === "all" || r.status === filterStatus;
+    const matchJk = filterJk === "all" || r.jenis_kelamin === filterJk;
+    return matchSearch && matchDesa && matchValidasi && matchStatus && matchJk;
   });
 
   async function doDelete(id: number) {
@@ -123,6 +143,7 @@ export function BalitaList({
 
   const namaCol: Column<Row> = {
     header: "Nama Balita",
+    sortValue: (r) => r.nama,
     cell: (r) => (
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -130,7 +151,7 @@ export function BalitaList({
         </div>
         <div>
           <div className="font-medium text-heading dark:text-slate-200">{r.nama}</div>
-          <div className="text-xs text-slate-400">NIK: {r.nik}</div>
+          <div className="text-xs text-slate-400 font-mono">NIK: {maskNik(r.nik)}</div>
         </div>
       </div>
     ),
@@ -138,13 +159,15 @@ export function BalitaList({
 
   const aktifColumns: Column<Row>[] = [
     namaCol,
-    { header: "JK", cell: (r) => <JkBadge jk={r.jenis_kelamin} /> },
-    { header: "Umur", cell: (r) => r.umur },
-    { header: "Desa", cell: (r) => r.desa_nama || "-" },
-    { header: "Posyandu", cell: (r) => r.posyandu_nama || "-" },
-    { header: "Nama Ibu", cell: (r) => r.nama_ibu || "-" },
+    { header: "JK", sortValue: (r) => r.jenis_kelamin, cell: (r) => <JkBadge jk={r.jenis_kelamin} /> },
+    { header: "Umur", sortValue: (r) => r.tanggal_lahir || "", cell: (r) => r.umur },
+    { header: "Desa", sortValue: (r) => r.desa_nama || "", cell: (r) => r.desa_nama || "-" },
+    { header: "Posyandu", sortValue: (r) => r.posyandu_nama || "", cell: (r) => r.posyandu_nama || "-" },
+    { header: "Nama Ibu", sortValue: (r) => r.nama_ibu || "", cell: (r) => r.nama_ibu || "-" },
+    { header: "No. HP", cell: (r) => <span className="font-mono text-xs">{maskPhone(r.no_hp)}</span> },
     {
       header: "Status",
+      sortValue: (r) => r.status,
       cell: (r) => (
         <Badge tone={r.status === "aktif" ? "aktif" : "nonaktif"}>
           {r.status === "aktif" ? "Aktif" : "Nonaktif"}
@@ -153,6 +176,7 @@ export function BalitaList({
     },
     {
       header: "Validasi",
+      sortValue: (r) => r.validasi_status,
       cell: (r) => <Badge tone={r.validasi_status}>{LABEL_VALIDASI[r.validasi_status] || r.validasi_status}</Badge>,
     },
     {
@@ -191,10 +215,10 @@ export function BalitaList({
 
   const sampahColumns: Column<Row>[] = [
     namaCol,
-    { header: "JK", cell: (r) => <JkBadge jk={r.jenis_kelamin} /> },
-    { header: "Umur", cell: (r) => r.umur },
-    { header: "Desa", cell: (r) => r.desa_nama || "-" },
-    { header: "Nama Ibu", cell: (r) => r.nama_ibu || "-" },
+    { header: "JK", sortValue: (r) => r.jenis_kelamin, cell: (r) => <JkBadge jk={r.jenis_kelamin} /> },
+    { header: "Umur", sortValue: (r) => r.tanggal_lahir || "", cell: (r) => r.umur },
+    { header: "Desa", sortValue: (r) => r.desa_nama || "", cell: (r) => r.desa_nama || "-" },
+    { header: "Nama Ibu", sortValue: (r) => r.nama_ibu || "", cell: (r) => r.nama_ibu || "-" },
     {
       header: "Aksi",
       cell: (r) => (
@@ -225,7 +249,55 @@ export function BalitaList({
       <Card className="p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <TabsAktifSampah value={tab} onChange={setTab} countSampah={trashData?.data?.length} />
-          <SearchBar value={search} onChange={setSearch} placeholder="Cari nama, NIK, atau nama ibu..." />
+          <div className="flex flex-wrap items-center gap-2">
+            {tab === "aktif" && (
+              <>
+                {!canAdd && (
+                  <Select
+                    value={filterDesa}
+                    onChange={(e) => setFilterDesa(e.target.value)}
+                    className="w-auto py-2 text-sm"
+                  >
+                    <option value="all">Semua Desa</option>
+                    {desaOpts.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+                <Select
+                  value={filterValidasi}
+                  onChange={(e) => setFilterValidasi(e.target.value as any)}
+                  className="w-auto py-2 text-sm"
+                >
+                  <option value="all">Semua Validasi</option>
+                  <option value="menunggu">Menunggu</option>
+                  <option value="disetujui">Disetujui</option>
+                  <option value="ditolak">Ditolak</option>
+                </Select>
+                <Select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as any)}
+                  className="w-auto py-2 text-sm"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="aktif">Aktif</option>
+                  <option value="nonaktif">Nonaktif</option>
+                </Select>
+                <Select
+                  value={filterJk}
+                  onChange={(e) => setFilterJk(e.target.value as any)}
+                  className="w-auto py-2 text-sm"
+                >
+                  <option value="all">Semua JK</option>
+                  <option value="L">Laki-laki</option>
+                  <option value="P">Perempuan</option>
+                </Select>
+              </>
+            )}
+            <SearchBar value={search} onChange={setSearch} placeholder="Cari nama, NIK, atau nama ibu..." />
+          </div>
         </div>
         <DataTable
           columns={tab === "aktif" ? aktifColumns : sampahColumns}

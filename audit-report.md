@@ -69,6 +69,14 @@
 - Konfirmasi ke user: pertahankan UI identik app (deviasi Rule 4/5) ATAU konversi ke standar loop (right-drawer + CRUD one page + UI restore).
 - Tambah rate limiting login + halaman error kustom (perbaikan cepat).
 
+## Update 2026-08-06 (2) — Proteksi Data Pribadi + UX Tabel
+**Enkripsi PII at-rest** (`src/lib/crypto.ts`, AES-256-GCM):
+- `balita.nik` & `balita.no_hp` **terenkripsi di database** (format `enc:...`), kunci `PII_KEY` di env (diturunkan via scrypt). Terverifikasi: DB menyimpan ciphertext, API mendekripsi.
+- **Blind index** `balita.nik_hash` (HMAC-SHA256) untuk exact-match search NIK & cek unik tanpa dekripsi (search NIK tetap berfungsi).
+**Masking PII di tampilan** (`src/lib/mask.ts`): NIK (`350101******0001`), No.HP (`0812****567`), Email (`ad***@…`) di semua tabel/daftar. Nilai penuh hanya untuk form edit (operator berwenang).
+**Tabel — fitur lengkap di semua list**: **pagination** (10/hal, `DataTable`), **sorting** (klik header, `sortValue`), **search**, **filter** (status/role/validasi/desa/JK sesuai entity), **CRUD satu-halaman** (drawer), **soft delete + tab Sampah + Pulihkan**.
+**Env baru**: `PII_KEY` (WAJIB di production, jangan diubah setelah ada data terenkripsi).
+
 ## Update 2026-08-06 — Semua Issue Resolved
 Atas keputusan user, UI **distandarkan penuh ke loop**:
 - ✅ Rule 5: form create/edit → **right-side drawer 400px** (`components/ui/Drawer.tsx`).

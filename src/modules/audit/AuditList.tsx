@@ -105,9 +105,10 @@ export function AuditList() {
   const counts = data?.counts;
 
   const columns: Column<AuditRow>[] = [
-    { header: "Waktu", cell: (r) => <span className="text-slate-500 whitespace-nowrap">{formatWaktu(r.created_at)}</span> },
+    { header: "Waktu", sortValue: (r) => new Date(r.created_at).getTime(), cell: (r) => <span className="text-slate-500 whitespace-nowrap">{formatWaktu(r.created_at)}</span> },
     {
       header: "User",
+      sortValue: (r) => r.user_nama ?? "",
       cell: (r) => (
         <div className="flex items-center gap-2">
           <span className="font-medium text-heading dark:text-slate-200">{r.user_nama ?? "-"}</span>
@@ -117,6 +118,7 @@ export function AuditList() {
     },
     {
       header: "Aksi",
+      sortValue: (r) => r.aksi,
       cell: (r) => (
         <div className="flex items-center gap-2">
           {aksiIcon(r.aksi)}
@@ -124,7 +126,7 @@ export function AuditList() {
         </div>
       ),
     },
-    { header: "Modul", cell: (r) => <Badge tone="default">{r.modul}</Badge> },
+    { header: "Modul", sortValue: (r) => r.modul, cell: (r) => <Badge tone="default">{r.modul}</Badge> },
     { header: "Detail", cell: (r) => <span className="text-slate-500">{r.detail ?? "-"}</span> },
     { header: "IP Address", cell: (r) => <span className="text-slate-500">{r.ip_address ?? "-"}</span> },
     { header: "Browser", cell: (r) => <span className="text-slate-500 text-xs">{r.browser ?? "-"}</span> },

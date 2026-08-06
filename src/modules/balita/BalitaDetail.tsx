@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Baby, Calendar, MapPin, Phone, User, Heart, Home, UserCog,
-  ClipboardList, Ruler, LineChart, Loader2, Inbox, Pencil,
+  ClipboardList, Ruler, LineChart, Loader2, Inbox, Pencil, Eye, EyeOff,
 } from "lucide-react";
 import { Button, Badge, Card, LABEL_VALIDASI } from "@/components/ui/primitives";
 import { apiFetch, useList } from "@/lib/useApi";
 import { formatTanggal } from "@/lib/utils";
+import { maskNik, maskPhone } from "@/lib/mask";
 
 type Detail = {
   id: number;
@@ -54,19 +55,28 @@ function InfoItem({
   icon: Icon,
   label,
   value,
+  mono,
+  action,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value?: string | null;
+  mono?: boolean;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="bg-white dark:bg-darkcard rounded-xl border border-slate-100 dark:border-slate-800 p-4 flex items-start gap-3">
       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
         <Icon className="w-4 h-4 text-slate-400" />
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="text-[11px] uppercase text-slate-400 font-medium tracking-wide">{label}</div>
-        <div className="font-medium text-heading dark:text-slate-200 truncate">{value || "-"}</div>
+        <div className="flex items-center gap-1.5">
+          <div className={`font-medium text-heading dark:text-slate-200 truncate ${mono ? "font-mono" : ""}`}>
+            {value || "-"}
+          </div>
+          {action}
+        </div>
       </div>
     </div>
   );
@@ -90,6 +100,8 @@ export function BalitaDetail({ id }: { id: number }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("pendampingan");
+  const [revealNik, setRevealNik] = useState(false);
+  const [revealHp, setRevealHp] = useState(false);
 
   useEffect(() => {
     apiFetch<Detail>(`/api/balita/${id}`).then((r) => {
@@ -135,8 +147,19 @@ export function BalitaDetail({ id }: { id: number }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-heading dark:text-white">{detail.nama}</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-0.5">
-            NIK: {detail.nik} · {detail.umur}
+          <p className="text-slate-500 dark:text-slate-400 mt-0.5 inline-flex items-center gap-1.5">
+            <span>
+              NIK: <span className="font-mono">{revealNik ? detail.nik : maskNik(detail.nik)}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setRevealNik((v) => !v)}
+              className="text-slate-400 hover:text-primary p-0.5 rounded"
+              title={revealNik ? "Sembunyikan NIK" : "Tampilkan NIK"}
+            >
+              {revealNik ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+            <span>· {detail.umur}</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -192,7 +215,24 @@ export function BalitaDetail({ id }: { id: number }) {
         <InfoItem icon={Heart} label="Posyandu" value={detail.posyandu_nama} />
         <InfoItem icon={User} label="Nama Ayah" value={detail.nama_ayah} />
         <InfoItem icon={User} label="Nama Ibu" value={detail.nama_ibu} />
-        <InfoItem icon={Phone} label="No. HP" value={detail.no_hp} />
+        <InfoItem
+          icon={Phone}
+          label="No. HP"
+          mono
+          value={detail.no_hp ? (revealHp ? detail.no_hp : maskPhone(detail.no_hp)) : "-"}
+          action={
+            detail.no_hp ? (
+              <button
+                type="button"
+                onClick={() => setRevealHp((v) => !v)}
+                className="text-slate-400 hover:text-primary p-0.5 rounded shrink-0"
+                title={revealHp ? "Sembunyikan No. HP" : "Tampilkan No. HP"}
+              >
+                {revealHp ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            ) : undefined
+          }
+        />
         <InfoItem icon={UserCog} label="Kader Pendamping" value={detail.kader_nama} />
         <InfoItem icon={Home} label="Alamat" value={detail.alamat} />
       </div>

@@ -20,6 +20,7 @@ import {
 import { sql } from "drizzle-orm";
 import { hitungStatusGizi } from "../lib/gizi";
 import { umurBulan } from "../lib/utils";
+import { encryptPII, blindIndex } from "../lib/crypto";
 
 const hash = (p: string) => bcrypt.hashSync(p, 10);
 
@@ -140,8 +141,9 @@ async function main() {
     .insert(balita)
     .values(
       balitaDef.map((b) => ({
-        nik: b.nik, nama: b.nama, jenis_kelamin: b.jk, tempat_lahir: b.tempat,
-        tanggal_lahir: b.lahir, nama_ayah: b.ayah, nama_ibu: b.ibu, no_hp: b.hp,
+        nik: encryptPII(b.nik)!, nik_hash: blindIndex(b.nik),
+        nama: b.nama, jenis_kelamin: b.jk, tempat_lahir: b.tempat,
+        tanggal_lahir: b.lahir, nama_ayah: b.ayah, nama_ibu: b.ibu, no_hp: encryptPII(b.hp),
         alamat: `Dusun ${b.dusun}, RT ${b.rt}/RW ${b.rw}`, rt: b.rt, rw: b.rw, dusun: b.dusun,
         desa_id: desaId(b.desa), posyandu_id: posyanduId(b.posyandu), kader_id: userId(b.kader),
         status: "aktif", validasi_status: b.validasi,
