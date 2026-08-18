@@ -154,6 +154,8 @@ npm run start
 
 ## 7. Deploy **Non-Vercel** (VPS / Docker) — Postgres biasa / MySQL
 
+> **DomaiNesia (cPanel Hosting) + Neon?** Lihat panduan khusus langkah demi langkah: [`DEPLOY-DOMAINESIA.md`](DEPLOY-DOMAINESIA.md) (pakai `server.js` + fitur cPanel "Setup Node.js App").
+
 ### Opsi A — VPS (Node + PM2 + Nginx)
 ```bash
 # di server
