@@ -2,6 +2,7 @@ import { and, asc, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { pendampingan, balita, desa } from "@/db/schema";
 import { combine, softDeleteCond, searchCond } from "@/lib/query";
+import { insertReturning, updateByIdReturning } from "@/db/repo";
 import { hitungUmur } from "@/lib/utils";
 
 export type PendampinganInput = {
@@ -107,24 +108,21 @@ export async function createPendampingan(
     hari_ke = diff >= 0 ? diff + 1 : 1;
   }
 
-  const rows = await db
-    .insert(pendampingan)
-    .values({
-      balita_id: input.balita_id,
-      tanggal: input.tanggal,
-      hari_ke,
-      jam: input.jam ?? null,
-      makan_telur: input.makan_telur,
-      jumlah_butir: input.makan_telur ? input.jumlah_butir ?? null : null,
-      kader_id: kaderId,
-      nama_pendamping: kaderNama,
-      keterangan: input.keterangan ?? null,
-      foto_dokumentasi: input.foto_dokumentasi ?? null,
-      lokasi_lat: input.lokasi_lat ?? null,
-      lokasi_lng: input.lokasi_lng ?? null,
-      validasi_status: "menunggu",
-    })
-    .returning();
+  const rows = await insertReturning(pendampingan, {
+    balita_id: input.balita_id,
+    tanggal: input.tanggal,
+    hari_ke,
+    jam: input.jam ?? null,
+    makan_telur: input.makan_telur,
+    jumlah_butir: input.makan_telur ? input.jumlah_butir ?? null : null,
+    kader_id: kaderId,
+    nama_pendamping: kaderNama,
+    keterangan: input.keterangan ?? null,
+    foto_dokumentasi: input.foto_dokumentasi ?? null,
+    lokasi_lat: input.lokasi_lat ?? null,
+    lokasi_lng: input.lokasi_lng ?? null,
+    validasi_status: "menunggu",
+  });
   return rows[0];
 }
 
@@ -145,11 +143,7 @@ export async function updatePendampingan(id: number, input: Partial<Pendampingan
   if (input.lokasi_lat !== undefined) patch.lokasi_lat = input.lokasi_lat;
   if (input.lokasi_lng !== undefined) patch.lokasi_lng = input.lokasi_lng;
 
-  const rows = await db
-    .update(pendampingan)
-    .set(patch)
-    .where(eq(pendampingan.id, id))
-    .returning();
+  const rows = await updateByIdReturning(pendampingan, id, patch);
   if (!rows[0]) throw new Error("Pendampingan tidak ditemukan");
   return rows[0];
 }

@@ -1,12 +1,56 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import * as schema from "./schema";
+/**
+ * Factory koneksi DB multi-engine. Driver dipilih dari config (neon | postgres | mysql).
+ * `db` diketik sebagai Postgres (Neon) untuk DX; pada MySQL di-cast — API query builder sama,
+ * kecuali `.returning()` yang di-abstraksi lewat `@/db/repo`.
+ */
+import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
+import * as pgSchema from "./schema.pg";
+import * as mySchema from "./schema.mysql";
+import { getDbConfig, type DbEngine } from "@/lib/db-config";
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL tidak ditemukan di environment");
+const cfg = getDbConfig();
+export const engine: DbEngine = cfg.engine;
+
+// Singleton (hindari banyak pool saat hot-reload dev)
+const g = globalThis as unknown as { __gematiDb?: unknown };
+
+function build(): unknown {
+  if (engine === "neon") {
+    if (!cfg.pgUrl) throw new Error("DATABASE_URL (Neon) tidak ditemukan di environment");
+    const { neon } = require("@neondatabase/serverless");
+    const { drizzle } = require("drizzle-orm/neon-http");
+    return drizzle(neon(cfg.pgUrl), { schema: pgSchema });
+  }
+  if (engine === "postgres") {
+    if (!cfg.pgUrl) throw new Error("Koneksi Postgres tidak ditemukan (DATABASE_URL / PGHOST)");
+    const { Pool } = require("pg");
+    const { drizzle } = require("drizzle-orm/node-postgres");
+    const pool = new Pool({
+      connectionString: cfg.pgUrl,
+      ssl: cfg.pgSsl ? { rejectUnauthorized: false } : undefined,
+    });
+    return drizzle(pool, { schema: pgSchema });
+  }
+  // mysql
+  const m = cfg.mysql!;
+  const mysql = require("mysql2/promise");
+  const { drizzle } = require("drizzle-orm/mysql2");
+  const pool = mysql.createPool({
+    host: m.host,
+    port: m.port,
+    user: m.user,
+    password: m.password,
+    database: m.database,
+    ssl: m.ssl ? { rejectUnauthorized: false } : undefined,
+    connectionLimit: 10,
+  });
+  return drizzle(pool, { schema: mySchema, mode: "default" });
 }
 
-const sql = neon(connectionString);
-export const db = drizzle(sql, { schema });
-export { schema };
+const _db = (g.__gematiDb ??= build());
+
+// Diketik sebagai Neon/Postgres drizzle; MySQL di-cast (repo helper menangani perbedaan).
+export const db = _db as NeonHttpDatabase<typeof pgSchema>;
+
+// Skema aktif (untuk drizzle-kit / util). Diketik pg.
+export const schema = (engine === "mysql" ? mySchema : pgSchema) as unknown as typeof pgSchema;

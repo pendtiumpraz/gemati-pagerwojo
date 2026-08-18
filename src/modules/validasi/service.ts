@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { balita, pendampingan, pengukuran, users } from "@/db/schema";
+import { updateReturning } from "@/db/repo";
 import type { SessionUser } from "@/lib/session";
 
 export type ValidasiTipe = "balita" | "pendampingan" | "pengukuran";
@@ -137,11 +138,11 @@ export async function listValidasi(session: SessionUser, opts: { status?: string
 export async function setValidasi(tipe: ValidasiTipe, id: number, status: string) {
   const table: any = TABLES[tipe];
   if (!table) throw new Error("Tipe tidak valid");
-  const rows = await db
-    .update(table)
-    .set({ validasi_status: status, updated_at: new Date() })
-    .where(eq(table.id, id))
-    .returning({ id: table.id });
+  const rows = await updateReturning(
+    table,
+    { validasi_status: status, updated_at: new Date() },
+    eq(table.id, id)
+  );
   if (!rows[0]) throw new Error("Data tidak ditemukan");
   return rows[0];
 }

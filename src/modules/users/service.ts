@@ -3,6 +3,7 @@ import { and, eq, isNull, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { users, desa, balita, pendampingan } from "@/db/schema";
 import { combine, searchCond, softDeleteCond, paginate } from "@/lib/query";
+import { insertReturning, updateByIdReturning } from "@/db/repo";
 import { sql } from "drizzle-orm";
 
 export type UserInput = {
@@ -79,19 +80,16 @@ export async function createUser(input: UserInput) {
   if (exist[0]) throw new Error("Username sudah digunakan");
 
   const pass = input.password || (input.role === "admin" ? "admin123" : "kader123");
-  const rows = await db
-    .insert(users)
-    .values({
-      nama: input.nama,
-      username: input.username,
-      role: input.role,
-      desa_id: input.role === "admin" ? null : input.desa_id ?? null,
-      phone: input.phone ?? null,
-      email: input.email ?? null,
-      password: bcrypt.hashSync(pass, 10),
-      active: true,
-    })
-    .returning();
+  const rows = await insertReturning(users, {
+    nama: input.nama,
+    username: input.username,
+    role: input.role,
+    desa_id: input.role === "admin" ? null : input.desa_id ?? null,
+    phone: input.phone ?? null,
+    email: input.email ?? null,
+    password: bcrypt.hashSync(pass, 10),
+    active: true,
+  });
   const { password, ...safe } = rows[0];
   return safe;
 }
@@ -106,7 +104,7 @@ export async function updateUser(id: number, input: Partial<UserInput>) {
   if (input.email !== undefined) patch.email = input.email;
   if (input.password) patch.password = bcrypt.hashSync(input.password, 10);
 
-  const rows = await db.update(users).set(patch).where(eq(users.id, id)).returning();
+  const rows = await updateByIdReturning(users, id, patch);
   if (!rows[0]) throw new Error("Pengguna tidak ditemukan");
   const { password, ...safe } = rows[0];
   return safe;

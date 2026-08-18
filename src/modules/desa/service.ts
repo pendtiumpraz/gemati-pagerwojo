@@ -2,6 +2,7 @@ import { and, eq, isNull, sql, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { desa, balita, pendampingan, pengukuran, users } from "@/db/schema";
 import { combine, searchCond, softDeleteCond, paginate } from "@/lib/query";
+import { insertReturning, updateByIdReturning } from "@/db/repo";
 
 export type DesaInput = {
   nama: string;
@@ -48,16 +49,13 @@ export async function getDesa(id: number) {
 export async function createDesa(input: DesaInput) {
   const nama = input.nama?.trim();
   if (!nama) throw new Error("Nama desa wajib diisi");
-  const rows = await db
-    .insert(desa)
-    .values({
-      nama,
-      kecamatan: input.kecamatan?.trim() || "Pagerwojo",
-      kabupaten: input.kabupaten?.trim() || "Tulungagung",
-      lat: input.lat ?? null,
-      lng: input.lng ?? null,
-    })
-    .returning();
+  const rows = await insertReturning(desa, {
+    nama,
+    kecamatan: input.kecamatan?.trim() || "Pagerwojo",
+    kabupaten: input.kabupaten?.trim() || "Tulungagung",
+    lat: input.lat ?? null,
+    lng: input.lng ?? null,
+  });
   return rows[0];
 }
 
@@ -73,7 +71,7 @@ export async function updateDesa(id: number, input: Partial<DesaInput>) {
   if (input.lat !== undefined) patch.lat = input.lat ?? null;
   if (input.lng !== undefined) patch.lng = input.lng ?? null;
 
-  const rows = await db.update(desa).set(patch).where(eq(desa.id, id)).returning();
+  const rows = await updateByIdReturning(desa, id, patch);
   if (!rows[0]) throw new Error("Desa tidak ditemukan");
   return rows[0];
 }

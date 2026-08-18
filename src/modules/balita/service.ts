@@ -2,6 +2,7 @@ import { and, eq, isNull, desc, sql, or, ilike } from "drizzle-orm";
 import { db } from "@/db";
 import { balita, desa, posyandu, users, pendampingan, pengukuran } from "@/db/schema";
 import { combine, softDeleteCond, paginate } from "@/lib/query";
+import { insertReturning, updateByIdReturning } from "@/db/repo";
 import { hitungUmur } from "@/lib/utils";
 import { encryptPII, decryptPII, blindIndex } from "@/lib/crypto";
 
@@ -153,30 +154,27 @@ async function assertDesaValid(desaId: number) {
 export async function createBalita(input: BalitaInput, kaderId?: number | null) {
   await assertDesaValid(input.desa_id);
 
-  const rows = await db
-    .insert(balita)
-    .values({
-      nik: encryptPII(input.nik)!, // enkripsi PII at-rest
-      nik_hash: blindIndex(input.nik),
-      nama: input.nama,
-      jenis_kelamin: input.jenis_kelamin,
-      tempat_lahir: input.tempat_lahir ?? null,
-      tanggal_lahir: input.tanggal_lahir,
-      nama_ayah: input.nama_ayah ?? null,
-      nama_ibu: input.nama_ibu,
-      no_hp: encryptPII(input.no_hp),
-      alamat: input.alamat ?? null,
-      rt: input.rt ?? null,
-      rw: input.rw ?? null,
-      dusun: input.dusun ?? null,
-      desa_id: input.desa_id,
-      posyandu_id: input.posyandu_id ?? null,
-      kader_id: kaderId ?? null,
-      foto: input.foto ?? null,
-      status: input.status ?? "aktif",
-      validasi_status: "menunggu",
-    })
-    .returning();
+  const rows = await insertReturning(balita, {
+    nik: encryptPII(input.nik)!, // enkripsi PII at-rest
+    nik_hash: blindIndex(input.nik),
+    nama: input.nama,
+    jenis_kelamin: input.jenis_kelamin,
+    tempat_lahir: input.tempat_lahir ?? null,
+    tanggal_lahir: input.tanggal_lahir,
+    nama_ayah: input.nama_ayah ?? null,
+    nama_ibu: input.nama_ibu,
+    no_hp: encryptPII(input.no_hp),
+    alamat: input.alamat ?? null,
+    rt: input.rt ?? null,
+    rw: input.rw ?? null,
+    dusun: input.dusun ?? null,
+    desa_id: input.desa_id,
+    posyandu_id: input.posyandu_id ?? null,
+    kader_id: kaderId ?? null,
+    foto: input.foto ?? null,
+    status: input.status ?? "aktif",
+    validasi_status: "menunggu",
+  });
   return rows[0];
 }
 
@@ -199,7 +197,7 @@ export async function updateBalita(id: number, input: Partial<BalitaInput>) {
   }
   if (input.no_hp !== undefined) patch.no_hp = encryptPII(input.no_hp);
 
-  const rows = await db.update(balita).set(patch).where(eq(balita.id, id)).returning();
+  const rows = await updateByIdReturning(balita, id, patch);
   if (!rows[0]) throw new Error("Balita tidak ditemukan");
   return rows[0];
 }

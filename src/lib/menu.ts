@@ -14,6 +14,7 @@ import {
   Ruler,
   BarChart3,
   History,
+  Server,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export const MENU: Record<Role, MenuItem[]> = {
     { label: "Audit Log", href: "/audit", icon: ScrollText },
     { label: "Laporan", href: "/laporan", icon: FileText },
     { label: "Pengaturan", href: "/pengaturan", icon: Settings },
+    { label: "Deployment & DB", href: "/deployment", icon: Server },
   ],
   ppkbd: [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },

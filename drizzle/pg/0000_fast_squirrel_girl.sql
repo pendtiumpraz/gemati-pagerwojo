@@ -29,14 +29,15 @@ CREATE TABLE IF NOT EXISTS "audit_logs" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "balita" (
 	"id" bigserial PRIMARY KEY NOT NULL,
-	"nik" varchar(20) NOT NULL,
+	"nik" varchar(255) NOT NULL,
+	"nik_hash" varchar(64),
 	"nama" varchar(150) NOT NULL,
 	"jenis_kelamin" varchar(1) NOT NULL,
 	"tempat_lahir" varchar(120),
 	"tanggal_lahir" varchar(10) NOT NULL,
 	"nama_ayah" varchar(150),
 	"nama_ibu" varchar(150) NOT NULL,
-	"no_hp" varchar(30),
+	"no_hp" varchar(255),
 	"alamat" text,
 	"rt" varchar(10),
 	"rw" varchar(10),
@@ -138,7 +139,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_audit_user_id" ON "audit_logs" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_audit_aksi" ON "audit_logs" USING btree ("aksi");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "idx_balita_nik" ON "balita" USING btree ("nik");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_balita_nik_hash" ON "balita" USING btree ("nik_hash");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_balita_desa_id" ON "balita" USING btree ("desa_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_balita_kader_id" ON "balita" USING btree ("kader_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_balita_validasi" ON "balita" USING btree ("validasi_status");--> statement-breakpoint

@@ -6,7 +6,8 @@ import { config } from "dotenv";
 config({ path: ".env" });
 
 import bcrypt from "bcryptjs";
-import { db } from "./index";
+import { db, engine } from "./index";
+import { insertReturning } from "./repo";
 import {
   users,
   desa,
@@ -27,10 +28,20 @@ const hash = (p: string) => bcrypt.hashSync(p, 10);
 async function main() {
   console.log("🌱 Seeding GEMATI Pagerwojo...");
 
-  // Bersihkan (urutan bebas karena tanpa FK)
-  await db.execute(
-    sql`TRUNCATE TABLE users, desa, posyandu, balita, pendampingan, pengukuran, audit_logs, app_settings, notifications RESTART IDENTITY CASCADE`
-  );
+  // Bersihkan (urutan bebas karena tanpa FK) — sintaks per dialek
+  const tables = [
+    "users", "desa", "posyandu", "balita", "pendampingan",
+    "pengukuran", "audit_logs", "app_settings", "notifications",
+  ];
+  if (engine === "mysql") {
+    for (const t of tables) {
+      await db.execute(sql.raw(`TRUNCATE TABLE \`${t}\``));
+    }
+  } else {
+    await db.execute(
+      sql.raw(`TRUNCATE TABLE ${tables.join(", ")} RESTART IDENTITY CASCADE`)
+    );
+  }
 
   // ---------- DESA (10) ----------
   const desaNama = [
@@ -58,18 +69,16 @@ async function main() {
     [-8.1350, 111.7650],
     [-8.1450, 111.7550],
   ];
-  const desaRows = await db
-    .insert(desa)
-    .values(
-      desaNama.map((nama, i) => ({
-        nama,
-        kecamatan: "Pagerwojo",
-        kabupaten: "Tulungagung",
-        lat: desaKoord[i][0],
-        lng: desaKoord[i][1],
-      }))
-    )
-    .returning({ id: desa.id, nama: desa.nama });
+  const desaRows = await insertReturning(
+    desa,
+    desaNama.map((nama, i) => ({
+      nama,
+      kecamatan: "Pagerwojo",
+      kabupaten: "Tulungagung",
+      lat: desaKoord[i][0],
+      lng: desaKoord[i][1],
+    }))
+  );
   const desaId = (nama: string) => desaRows.find((d) => d.nama === nama)!.id;
   console.log(`  ✓ ${desaRows.length} desa`);
 
@@ -82,10 +91,10 @@ async function main() {
     ["Anggrek I", "Samar"],
     ["Dahlia I", "Segawe"],
   ];
-  const posyanduRows = await db
-    .insert(posyandu)
-    .values(posyanduDef.map(([nama, d]) => ({ nama, desa_id: desaId(d) })))
-    .returning({ id: posyandu.id, nama: posyandu.nama });
+  const posyanduRows = await insertReturning(
+    posyandu,
+    posyanduDef.map(([nama, d]) => ({ nama, desa_id: desaId(d) }))
+  );
   const posyanduId = (nama: string) => posyanduRows.find((p) => p.nama === nama)?.id ?? null;
   console.log(`  ✓ ${posyanduRows.length} posyandu`);
 
@@ -100,21 +109,19 @@ async function main() {
     { username: "kader.kedungcangkring01", nama: "Nur Hidayah", role: "kader", desa: "Kedungcangkring", phone: "081234567896" },
     { username: "kader.pagerwojo01", nama: "Wahyu Setiawan", role: "kader", desa: "Pagerwojo", phone: "081234567897" },
   ];
-  const userRows = await db
-    .insert(users)
-    .values(
-      usersDef.map((u) => ({
-        username: u.username,
-        password: hash(u.role === "admin" ? "admin123" : "kader123"),
-        nama: u.nama,
-        role: u.role,
-        desa_id: u.desa ? desaId(u.desa) : null,
-        phone: u.phone,
-        email: `${u.username}@pagerwojo.go.id`,
-        active: true,
-      }))
-    )
-    .returning({ id: users.id, username: users.username, nama: users.nama });
+  const userRows = await insertReturning(
+    users,
+    usersDef.map((u) => ({
+      username: u.username,
+      password: hash(u.role === "admin" ? "admin123" : "kader123"),
+      nama: u.nama,
+      role: u.role,
+      desa_id: u.desa ? desaId(u.desa) : null,
+      phone: u.phone,
+      email: `${u.username}@pagerwojo.go.id`,
+      active: true,
+    }))
+  );
   const userId = (username: string) => userRows.find((u) => u.username === username)!.id;
   const userNama = (username: string) => userRows.find((u) => u.username === username)!.nama;
   console.log(`  ✓ ${userRows.length} users (admin: admin/admin123, lain: /kader123)`);
@@ -137,19 +144,17 @@ async function main() {
     { nik: "3501010502230009", nama: "Salsabila Putri", jk: "P", lahir: "2023-07-14", tempat: "Tulungagung", ayah: "Wagiman", ibu: "Kartini", hp: "081234500009", desa: "Pagerwojo", posyandu: "Mawar I", kader: "kader.pagerwojo01", dusun: "Tanggung", rt: "02", rw: "02", validasi: "disetujui" },
     { nik: "3501010503240010", nama: "Farel Ramadhan", jk: "L", lahir: "2024-04-01", tempat: "Tulungagung", ayah: "Sutrisno", ibu: "Lestari", hp: "081234500010", desa: "Pagerwojo", posyandu: "Mawar I", kader: "kader.pagerwojo01", dusun: "Tanggung", rt: "03", rw: "01", validasi: "disetujui" },
   ];
-  const balitaRows = await db
-    .insert(balita)
-    .values(
-      balitaDef.map((b) => ({
-        nik: encryptPII(b.nik)!, nik_hash: blindIndex(b.nik),
-        nama: b.nama, jenis_kelamin: b.jk, tempat_lahir: b.tempat,
-        tanggal_lahir: b.lahir, nama_ayah: b.ayah, nama_ibu: b.ibu, no_hp: encryptPII(b.hp),
-        alamat: `Dusun ${b.dusun}, RT ${b.rt}/RW ${b.rw}`, rt: b.rt, rw: b.rw, dusun: b.dusun,
-        desa_id: desaId(b.desa), posyandu_id: posyanduId(b.posyandu), kader_id: userId(b.kader),
-        status: "aktif", validasi_status: b.validasi,
-      }))
-    )
-    .returning({ id: balita.id, nama: balita.nama });
+  const balitaRows = await insertReturning(
+    balita,
+    balitaDef.map((b) => ({
+      nik: encryptPII(b.nik)!, nik_hash: blindIndex(b.nik),
+      nama: b.nama, jenis_kelamin: b.jk, tempat_lahir: b.tempat,
+      tanggal_lahir: b.lahir, nama_ayah: b.ayah, nama_ibu: b.ibu, no_hp: encryptPII(b.hp),
+      alamat: `Dusun ${b.dusun}, RT ${b.rt}/RW ${b.rw}`, rt: b.rt, rw: b.rw, dusun: b.dusun,
+      desa_id: desaId(b.desa), posyandu_id: posyanduId(b.posyandu), kader_id: userId(b.kader),
+      status: "aktif", validasi_status: b.validasi,
+    }))
+  );
   const balitaId = (nama: string) => balitaRows.find((b) => b.nama === nama)!.id;
   console.log(`  ✓ ${balitaRows.length} balita`);
 

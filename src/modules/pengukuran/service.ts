@@ -2,6 +2,7 @@ import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { pengukuran, balita, desa } from "@/db/schema";
 import { combine, softDeleteCond, searchCond } from "@/lib/query";
+import { insertReturning, updateByIdReturning } from "@/db/repo";
 import { hitungUmur, umurBulan } from "@/lib/utils";
 import { hitungStatusGizi } from "@/lib/gizi";
 
@@ -96,22 +97,19 @@ export async function createPengukuran(input: PengukuranInput, kaderId: number |
     b.jenis_kelamin as "L" | "P"
   );
 
-  const rows = await db
-    .insert(pengukuran)
-    .values({
-      balita_id: input.balita_id,
-      tanggal: input.tanggal,
-      berat_badan: input.berat_badan,
-      tinggi_badan: input.tinggi_badan,
-      lingkar_kepala: input.lingkar_kepala ?? null,
-      lingkar_lengan_atas: input.lingkar_lengan_atas ?? null,
-      z_score: gizi.z_score,
-      status_gizi: gizi.status_gizi,
-      risiko_stunting: gizi.risiko_stunting,
-      kader_id: kaderId,
-      validasi_status: "menunggu",
-    })
-    .returning();
+  const rows = await insertReturning(pengukuran, {
+    balita_id: input.balita_id,
+    tanggal: input.tanggal,
+    berat_badan: input.berat_badan,
+    tinggi_badan: input.tinggi_badan,
+    lingkar_kepala: input.lingkar_kepala ?? null,
+    lingkar_lengan_atas: input.lingkar_lengan_atas ?? null,
+    z_score: gizi.z_score,
+    status_gizi: gizi.status_gizi,
+    risiko_stunting: gizi.risiko_stunting,
+    kader_id: kaderId,
+    validasi_status: "menunggu",
+  });
   return rows[0];
 }
 
@@ -148,7 +146,7 @@ export async function updatePengukuran(id: number, input: Partial<PengukuranInpu
     }
   }
 
-  const rows = await db.update(pengukuran).set(patch).where(eq(pengukuran.id, id)).returning();
+  const rows = await updateByIdReturning(pengukuran, id, patch);
   return rows[0];
 }
 

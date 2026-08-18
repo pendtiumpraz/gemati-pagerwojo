@@ -3,9 +3,11 @@ node_modules
 out
 build
 dist
+*.tsbuildinfo
 .env
 .env.local
 .env*.local
+config/deployment.json
 *.log
 npm-debug.log*
 .DS_Store
