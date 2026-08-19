@@ -9,7 +9,20 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch, useList } from "@/lib/useApi";
 import { formatTanggal } from "@/lib/utils";
+import { DataToolbar } from "@/components/ui/DataToolbar";
+import { IMPORT_FIELDS } from "@/lib/import-configs";
 import { PendampinganForm } from "./PendampinganForm";
+
+const EXPORT_COLUMNS = [
+  { key: "tanggal", header: "Tanggal" },
+  { key: "balita_nama", header: "Balita" },
+  { key: "hari_ke", header: "Hari" },
+  { key: "makan_telur", header: "Makan Telur" },
+  { key: "jam", header: "Jam" },
+  { key: "nama_pendamping", header: "Pendamping" },
+  { key: "keterangan", header: "Keterangan" },
+  { key: "validasi_status", header: "Validasi" },
+];
 
 export type PendampinganRow = {
   id: number;
@@ -178,11 +191,20 @@ export function PendampinganList({
         title="Pendampingan Makan Telur"
         subtitle="Catatan konsumsi telur harian balita dampingan"
         actions={
-          canEdit ? (
-            <Button onClick={openAdd}>
-              <Plus className="w-4 h-4" /> Pendampingan Baru
-            </Button>
-          ) : undefined
+          <>
+            <DataToolbar
+              rows={rows}
+              columns={EXPORT_COLUMNS}
+              filename="data-pendampingan"
+              title="Data Pendampingan"
+              importConfig={{ entity: "pendampingan", fields: IMPORT_FIELDS["pendampingan"], onDone: reloadAll }}
+            />
+            {canEdit && (
+              <Button onClick={openAdd}>
+                <Plus className="w-4 h-4" /> Pendampingan Baru
+              </Button>
+            )}
+          </>
         }
       />
 

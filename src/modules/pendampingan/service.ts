@@ -4,6 +4,8 @@ import { pendampingan, balita, desa } from "@/db/schema";
 import { combine, softDeleteCond, searchCond } from "@/lib/query";
 import { insertReturning, updateByIdReturning } from "@/db/repo";
 import { hitungUmur } from "@/lib/utils";
+import { runImport, findBalitaIdByNik, req, type ImportResult } from "@/modules/shared/import";
+import type { SessionUser } from "@/lib/session";
 
 export type PendampinganInput = {
   balita_id: number;
@@ -158,4 +160,45 @@ export async function restorePendampingan(id: number) {
 
 export async function getTrashedPendampingan(page = 1, pageSize = 50) {
   return listPendampingan({ role: "admin", trashed: true, page, pageSize });
+}
+
+/** Parse "Ya"/"ya"/"y"/"1"/"true" → true; selain itu false. Default true bila kosong. */
+function parseBool(v: any, def = true): boolean {
+  if (v === undefined || v === null || String(v).trim() === "") return def;
+  const s = String(v).trim().toLowerCase();
+  return s === "ya" || s === "y" || s === "1" || s === "true";
+}
+
+/** Import massal pendampingan dari Excel/CSV. Kolom lihat IMPORT_FIELDS.pendampingan. */
+export async function importPendampingan(
+  rows: any[],
+  session: SessionUser
+): Promise<ImportResult> {
+  return runImport(rows, async (r) => {
+    const nik = req(r, "nik", "NIK Balita");
+    const balita_id = await findBalitaIdByNik(nik);
+    if (!balita_id) throw new Error(`NIK ${nik} tidak ditemukan`);
+    const tanggal = req(r, "tanggal", "Tanggal");
+
+    const makan_telur = parseBool(r.makan_telur, true);
+    let jumlah_butir: number | null = null;
+    if (makan_telur && r.jumlah_butir !== undefined && r.jumlah_butir !== null && String(r.jumlah_butir).trim() !== "") {
+      const n = Number(String(r.jumlah_butir).replace(",", "."));
+      if (Number.isNaN(n)) throw new Error("Jumlah Butir bukan angka valid");
+      jumlah_butir = n;
+    }
+
+    await createPendampingan(
+      {
+        balita_id,
+        tanggal,
+        jam: r.jam || null,
+        makan_telur,
+        jumlah_butir,
+        keterangan: r.keterangan || null,
+      },
+      session.id,
+      session.nama
+    );
+  });
 }

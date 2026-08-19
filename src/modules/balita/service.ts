@@ -5,6 +5,8 @@ import { combine, softDeleteCond, paginate } from "@/lib/query";
 import { insertReturning, updateByIdReturning } from "@/db/repo";
 import { hitungUmur } from "@/lib/utils";
 import { encryptPII, decryptPII, blindIndex } from "@/lib/crypto";
+import { runImport, createLookups, req, type ImportResult } from "@/modules/shared/import";
+import type { SessionUser } from "@/lib/session";
 
 export type BalitaInput = {
   nik: string;
@@ -223,4 +225,42 @@ export async function listPosyanduOpsi(desaId?: number) {
   const q = db.select({ id: posyandu.id, nama: posyandu.nama, desa_id: posyandu.desa_id }).from(posyandu);
   if (where) q.where(where);
   return q.orderBy(posyandu.nama);
+}
+
+/** Import massal balita dari Excel/CSV. Kolom lihat IMPORT_FIELDS.balita. */
+export async function importBalita(rows: any[], session: SessionUser): Promise<ImportResult> {
+  const lk = await createLookups();
+  return runImport(rows, async (r) => {
+    const nik = req(r, "nik", "NIK");
+    const nama = req(r, "nama", "Nama Balita");
+    const jk = req(r, "jenis_kelamin", "Jenis Kelamin").toUpperCase();
+    if (jk !== "L" && jk !== "P") throw new Error("Jenis Kelamin harus L atau P");
+    const tanggal_lahir = req(r, "tanggal_lahir", "Tanggal Lahir");
+    const nama_ibu = req(r, "nama_ibu", "Nama Ibu");
+
+    let desa_id = lk.desaId(r.desa);
+    if (session.role !== "admin") desa_id = session.desa_id; // kader/ppkbd dikunci ke desanya
+    if (!desa_id) throw new Error(`Desa "${r.desa || ""}" tidak ditemukan`);
+
+    await createBalita(
+      {
+        nik,
+        nama,
+        jenis_kelamin: jk as "L" | "P",
+        tempat_lahir: r.tempat_lahir || null,
+        tanggal_lahir,
+        nama_ayah: r.nama_ayah || null,
+        nama_ibu,
+        no_hp: r.no_hp || null,
+        alamat: r.alamat || null,
+        rt: r.rt || null,
+        rw: r.rw || null,
+        dusun: r.dusun || null,
+        desa_id,
+        posyandu_id: lk.posyanduId(r.posyandu),
+        status: (r.status || "aktif").toLowerCase(),
+      },
+      session.role === "kader" ? session.id : null
+    );
+  });
 }

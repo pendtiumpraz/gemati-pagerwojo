@@ -5,6 +5,8 @@ import { combine, softDeleteCond, searchCond } from "@/lib/query";
 import { insertReturning, updateByIdReturning } from "@/db/repo";
 import { hitungUmur, umurBulan } from "@/lib/utils";
 import { hitungStatusGizi } from "@/lib/gizi";
+import { runImport, findBalitaIdByNik, req, type ImportResult } from "@/modules/shared/import";
+import type { SessionUser } from "@/lib/session";
 
 export type PengukuranInput = {
   balita_id: number;
@@ -160,4 +162,45 @@ export async function restorePengukuran(id: number) {
 
 export async function getTrashedPengukuran(page = 1, pageSize = 50) {
   return listPengukuran({ role: "admin", trashed: true, page, pageSize });
+}
+
+/** Parse angka desimal ("9,2" atau "9.2"). Kosong → null; NaN → throw. */
+function numOrNull(v: any, label: string): number | null {
+  if (v === undefined || v === null || String(v).trim() === "") return null;
+  const n = Number(String(v).replace(",", "."));
+  if (Number.isNaN(n)) throw new Error(`${label} bukan angka valid`);
+  return n;
+}
+
+function numReq(v: any, label: string): number {
+  const n = numOrNull(v, label);
+  if (n === null) throw new Error(`${label} wajib diisi`);
+  return n;
+}
+
+/** Import massal pengukuran dari Excel/CSV. Kolom lihat IMPORT_FIELDS.pengukuran. */
+export async function importPengukuran(
+  rows: any[],
+  session: SessionUser
+): Promise<ImportResult> {
+  return runImport(rows, async (r) => {
+    const nik = req(r, "nik", "NIK Balita");
+    const balita_id = await findBalitaIdByNik(nik);
+    if (!balita_id) throw new Error(`NIK ${nik} tidak ditemukan`);
+    const tanggal = req(r, "tanggal", "Tanggal");
+    const berat_badan = numReq(r.berat_badan, "Berat Badan");
+    const tinggi_badan = numReq(r.tinggi_badan, "Tinggi Badan");
+
+    await createPengukuran(
+      {
+        balita_id,
+        tanggal,
+        berat_badan,
+        tinggi_badan,
+        lingkar_kepala: numOrNull(r.lingkar_kepala, "Lingkar Kepala"),
+        lingkar_lengan_atas: numOrNull(r.lingkar_lengan_atas, "Lingkar Lengan Atas"),
+      },
+      session.id
+    );
+  });
 }

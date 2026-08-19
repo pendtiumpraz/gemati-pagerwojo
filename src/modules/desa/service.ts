@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { desa, balita, pendampingan, pengukuran, users } from "@/db/schema";
 import { combine, searchCond, softDeleteCond, paginate } from "@/lib/query";
 import { insertReturning, updateByIdReturning } from "@/db/repo";
+import { runImport, req, type ImportResult } from "@/modules/shared/import";
 
 export type DesaInput = {
   nama: string;
@@ -137,6 +138,18 @@ export async function listDesaAgregat() {
       };
     })
   );
+}
+
+/** Import massal desa dari Excel/CSV. Kolom lihat IMPORT_FIELDS.desa. */
+export async function importDesa(rows: any[]): Promise<ImportResult> {
+  return runImport(rows, async (r) => {
+    const nama = req(r, "nama", "Nama Desa");
+    await createDesa({
+      nama,
+      kecamatan: r.kecamatan || "Pagerwojo",
+      kabupaten: r.kabupaten || "Tulungagung",
+    });
+  });
 }
 
 // pendampingan/pengukuran tidak punya desa_id langsung → via balita

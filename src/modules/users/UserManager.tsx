@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/toast";
 import { apiFetch, useList } from "@/lib/useApi";
 import { inisial } from "@/lib/utils";
 import { maskPhone, maskEmail } from "@/lib/mask";
+import { DataToolbar } from "@/components/ui/DataToolbar";
+import { IMPORT_FIELDS } from "@/lib/import-configs";
 
 type Row = {
   id: number; nama: string; username: string; role: string;
@@ -71,6 +73,22 @@ export function UserManager({
     const matchRole = filterRole === "all" || r.role === filterRole;
     return matchSearch && matchStatus && matchRole;
   });
+
+  const entity = role ?? "users";
+  const exportRows = rows.map((r) => ({
+    ...r,
+    role_label: ROLE_LABEL[r.role] ?? r.role,
+    status_label: r.active ? "Aktif" : "Nonaktif",
+  }));
+  const exportColumns = [
+    { key: "nama", header: "Nama" },
+    { key: "username", header: "Username" },
+    ...(showRole ? [{ key: "role_label", header: "Role" }] : []),
+    { key: "desa_nama", header: "Desa" },
+    { key: "phone", header: "No. HP" },
+    { key: "email", header: "Email" },
+    { key: "status_label", header: "Status" },
+  ];
 
   const stats = useMemo(() => {
     const all = data?.data || [];
@@ -202,7 +220,18 @@ export function UserManager({
       <PageHeader
         title={title}
         subtitle={subtitle}
-        actions={<Button onClick={openAdd}><Plus className="w-4 h-4" /> {addLabel}</Button>}
+        actions={
+          <>
+            <DataToolbar
+              rows={exportRows}
+              columns={exportColumns}
+              filename={`data-${entity}`}
+              title={title}
+              importConfig={{ entity, fields: IMPORT_FIELDS[entity], onDone: reloadAll }}
+            />
+            <Button onClick={openAdd}><Plus className="w-4 h-4" /> {addLabel}</Button>
+          </>
+        }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -5,6 +5,7 @@ import { users, desa, balita, pendampingan } from "@/db/schema";
 import { combine, searchCond, softDeleteCond, paginate } from "@/lib/query";
 import { insertReturning, updateByIdReturning } from "@/db/repo";
 import { sql } from "drizzle-orm";
+import { runImport, createLookups, req, type ImportResult } from "@/modules/shared/import";
 
 export type UserInput = {
   nama: string;
@@ -132,4 +133,41 @@ export async function resetPassword(id: number, newPass = "password123") {
     .set({ password: bcrypt.hashSync(newPass, 10) })
     .where(eq(users.id, id));
   return newPass;
+}
+
+/** Import massal pengguna/kader/ppkbd dari Excel/CSV. Kolom lihat IMPORT_FIELDS.users/kader/ppkbd. */
+export async function importUsers(
+  rows: any[],
+  forcedRole?: "kader" | "ppkbd"
+): Promise<ImportResult> {
+  const lk = await createLookups();
+  return runImport(rows, async (r) => {
+    const nama = req(r, "nama", "Nama Lengkap");
+    const username = req(r, "username", "Username");
+
+    let role: "admin" | "ppkbd" | "kader";
+    if (forcedRole) {
+      role = forcedRole;
+    } else {
+      role = String(req(r, "role", "Role")).toLowerCase() as any;
+      if (role !== "admin" && role !== "ppkbd" && role !== "kader")
+        throw new Error("Role harus admin, ppkbd, atau kader");
+    }
+
+    let desa_id: number | null = null;
+    if (role !== "admin") {
+      desa_id = lk.desaId(r.desa);
+      if (!desa_id) throw new Error(`Desa "${r.desa || ""}" tidak ditemukan`);
+    }
+
+    await createUser({
+      nama,
+      username,
+      role,
+      desa_id,
+      phone: r.phone || null,
+      email: r.email || null,
+      password: r.password || "kader123",
+    });
+  });
 }

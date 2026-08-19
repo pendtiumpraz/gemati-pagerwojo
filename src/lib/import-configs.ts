@@ -1,0 +1,68 @@
+import type { ImportField } from "./exporter";
+
+/** Definisi kolom import per entity — dipakai untuk template & pemetaan header. */
+export const IMPORT_FIELDS: Record<string, ImportField[]> = {
+  desa: [
+    { key: "nama", header: "Nama Desa", required: true, example: "Mulyosari" },
+    { key: "kecamatan", header: "Kecamatan", example: "Pagerwojo" },
+    { key: "kabupaten", header: "Kabupaten", example: "Tulungagung" },
+  ],
+  users: [
+    { key: "nama", header: "Nama Lengkap", required: true, example: "Budi Santoso" },
+    { key: "username", header: "Username", required: true, example: "kader.mulyosari03" },
+    { key: "role", header: "Role", required: true, example: "kader", hint: "admin | ppkbd | kader" },
+    { key: "desa", header: "Desa", example: "Mulyosari" },
+    { key: "phone", header: "No. HP", example: "081234567890" },
+    { key: "email", header: "Email", example: "budi@pagerwojo.go.id" },
+    { key: "password", header: "Password Awal", example: "kader123" },
+  ],
+  kader: [
+    { key: "nama", header: "Nama Lengkap", required: true, example: "Budi Santoso" },
+    { key: "username", header: "Username", required: true, example: "kader.mulyosari03" },
+    { key: "desa", header: "Desa", required: true, example: "Mulyosari" },
+    { key: "phone", header: "No. HP", example: "081234567890" },
+    { key: "email", header: "Email", example: "budi@pagerwojo.go.id" },
+    { key: "password", header: "Password Awal", example: "kader123" },
+  ],
+  ppkbd: [
+    { key: "nama", header: "Nama Lengkap", required: true, example: "Siti Aminah" },
+    { key: "username", header: "Username", required: true, example: "ppkbd.samar" },
+    { key: "desa", header: "Desa", required: true, example: "Samar" },
+    { key: "phone", header: "No. HP", example: "081234567890" },
+    { key: "email", header: "Email", example: "siti@pagerwojo.go.id" },
+    { key: "password", header: "Password Awal", example: "kader123" },
+  ],
+  balita: [
+    { key: "nik", header: "NIK", required: true, example: "3501010101250099" },
+    { key: "nama", header: "Nama Balita", required: true, example: "Ahmad Rizki" },
+    { key: "jenis_kelamin", header: "Jenis Kelamin", required: true, example: "L", hint: "L atau P" },
+    { key: "tempat_lahir", header: "Tempat Lahir", example: "Tulungagung" },
+    { key: "tanggal_lahir", header: "Tanggal Lahir", required: true, example: "2023-06-15", hint: "YYYY-MM-DD" },
+    { key: "nama_ayah", header: "Nama Ayah", example: "Suparman" },
+    { key: "nama_ibu", header: "Nama Ibu", required: true, example: "Siti Khadijah" },
+    { key: "no_hp", header: "No. HP", example: "081234500001" },
+    { key: "alamat", header: "Alamat", example: "Dusun Sido Mukti" },
+    { key: "rt", header: "RT", example: "02" },
+    { key: "rw", header: "RW", example: "02" },
+    { key: "dusun", header: "Dusun", example: "Sido Mukti" },
+    { key: "desa", header: "Desa", example: "Mulyosari" },
+    { key: "posyandu", header: "Posyandu", example: "Melati I" },
+    { key: "status", header: "Status", example: "aktif", hint: "aktif | nonaktif" },
+  ],
+  pendampingan: [
+    { key: "nik", header: "NIK Balita", required: true, example: "3501010101220001" },
+    { key: "tanggal", header: "Tanggal", required: true, example: "2026-08-06", hint: "YYYY-MM-DD" },
+    { key: "jam", header: "Jam", example: "09:00" },
+    { key: "makan_telur", header: "Makan Telur", example: "Ya", hint: "Ya atau Tidak" },
+    { key: "jumlah_butir", header: "Jumlah Butir", example: "2" },
+    { key: "keterangan", header: "Keterangan", example: "Balita makan telur dengan lahap" },
+  ],
+  pengukuran: [
+    { key: "nik", header: "NIK Balita", required: true, example: "3501010101220001" },
+    { key: "tanggal", header: "Tanggal", required: true, example: "2026-08-06", hint: "YYYY-MM-DD" },
+    { key: "berat_badan", header: "Berat Badan (kg)", required: true, example: "9.2" },
+    { key: "tinggi_badan", header: "Tinggi Badan (cm)", required: true, example: "74.5" },
+    { key: "lingkar_kepala", header: "Lingkar Kepala (cm)", example: "45" },
+    { key: "lingkar_lengan_atas", header: "Lingkar Lengan Atas (cm)", example: "13" },
+  ],
+};

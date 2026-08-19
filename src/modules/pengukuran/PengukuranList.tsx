@@ -10,7 +10,21 @@ import { useToast } from "@/components/ui/toast";
 import { apiFetch, useList } from "@/lib/useApi";
 import { formatTanggal } from "@/lib/utils";
 import { LABEL_GIZI } from "@/lib/gizi";
+import { DataToolbar } from "@/components/ui/DataToolbar";
+import { IMPORT_FIELDS } from "@/lib/import-configs";
 import { PengukuranForm } from "./PengukuranForm";
+
+const EXPORT_COLUMNS = [
+  { key: "tanggal", header: "Tanggal" },
+  { key: "balita_nama", header: "Balita" },
+  { key: "berat_badan", header: "BB (kg)" },
+  { key: "tinggi_badan", header: "TB (cm)" },
+  { key: "lingkar_kepala", header: "Lingkar Kepala" },
+  { key: "lingkar_lengan_atas", header: "LILA" },
+  { key: "z_score", header: "Z-Score" },
+  { key: "status_gizi", header: "Status Gizi" },
+  { key: "validasi_status", header: "Validasi" },
+];
 
 export type PengukuranRow = {
   id: number;
@@ -178,11 +192,20 @@ export function PengukuranList({
         title="Pengukuran Balita"
         subtitle="Antropometri & status gizi balita dampingan"
         actions={
-          canEdit ? (
-            <Button onClick={openAdd}>
-              <Plus className="w-4 h-4" /> Pengukuran Baru
-            </Button>
-          ) : undefined
+          <>
+            <DataToolbar
+              rows={rows}
+              columns={EXPORT_COLUMNS}
+              filename="data-pengukuran"
+              title="Data Pengukuran"
+              importConfig={{ entity: "pengukuran", fields: IMPORT_FIELDS["pengukuran"], onDone: reloadAll }}
+            />
+            {canEdit && (
+              <Button onClick={openAdd}>
+                <Plus className="w-4 h-4" /> Pengukuran Baru
+              </Button>
+            )}
+          </>
         }
       />
 

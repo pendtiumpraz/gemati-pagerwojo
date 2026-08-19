@@ -9,7 +9,21 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch, useList } from "@/lib/useApi";
 import { maskNik, maskPhone } from "@/lib/mask";
+import { DataToolbar } from "@/components/ui/DataToolbar";
+import { IMPORT_FIELDS } from "@/lib/import-configs";
 import { BalitaForm } from "./BalitaForm";
+
+const EXPORT_COLUMNS = [
+  { key: "nama", header: "Nama" },
+  { key: "nik", header: "NIK" },
+  { key: "jenis_kelamin", header: "JK" },
+  { key: "umur", header: "Umur" },
+  { key: "desa_nama", header: "Desa" },
+  { key: "posyandu_nama", header: "Posyandu" },
+  { key: "nama_ibu", header: "Nama Ibu" },
+  { key: "status", header: "Status" },
+  { key: "validasi_status", header: "Validasi" },
+];
 
 type Row = {
   id: number;
@@ -219,11 +233,20 @@ export function BalitaList({
         title={title}
         subtitle={subtitle}
         actions={
-          canAdd ? (
-            <Button onClick={openAdd}>
-              <Plus className="w-4 h-4" /> Tambah Balita
-            </Button>
-          ) : undefined
+          <>
+            <DataToolbar
+              rows={rows}
+              columns={EXPORT_COLUMNS}
+              filename="data-balita"
+              title="Data Balita"
+              importConfig={{ entity: "balita", fields: IMPORT_FIELDS["balita"], onDone: reloadAll }}
+            />
+            {canAdd && (
+              <Button onClick={openAdd}>
+                <Plus className="w-4 h-4" /> Tambah Balita
+              </Button>
+            )}
+          </>
         }
       />
 

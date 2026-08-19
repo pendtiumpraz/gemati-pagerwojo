@@ -5,8 +5,6 @@ import {
   LogIn,
   PlusCircle,
   CheckCircle,
-  Download,
-  Printer,
   Pencil,
   Trash2,
   Activity,
@@ -17,11 +15,22 @@ import {
   SearchBar,
   Card,
   Badge,
-  Button,
   Select,
 } from "@/components/ui/primitives";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { DataToolbar } from "@/components/ui/DataToolbar";
 import { useList } from "@/lib/useApi";
+
+const EXPORT_COLUMNS = [
+  { key: "waktu", header: "Waktu" },
+  { key: "user", header: "User" },
+  { key: "role", header: "Role" },
+  { key: "aksi", header: "Aksi" },
+  { key: "modul", header: "Modul" },
+  { key: "detail", header: "Detail" },
+  { key: "ip", header: "IP Address" },
+  { key: "browser", header: "Browser" },
+];
 
 type AuditRow = {
   id: number;
@@ -61,32 +70,6 @@ function formatWaktu(d: string) {
     date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 }
 
-function downloadCSV(rows: AuditRow[]) {
-  const header = ["Waktu", "User", "Role", "Aksi", "Modul", "Detail", "IP Address", "Browser"];
-  const lines = rows.map((r) =>
-    [
-      formatWaktu(r.created_at),
-      r.user_nama ?? "-",
-      r.user_role ?? "-",
-      r.aksi,
-      r.modul,
-      r.detail ?? "-",
-      r.ip_address ?? "-",
-      r.browser ?? "-",
-    ]
-      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-      .join(",")
-  );
-  const content = "﻿" + [header.join(","), ...lines].join("\n");
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "audit-log.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export function AuditList() {
   const [aksi, setAksi] = useState("");
   const [role, setRole] = useState("");
@@ -103,6 +86,17 @@ export function AuditList() {
   const { data, loading } = useList<AuditData>(`/api/audit?${qs}`);
   const rows = data?.data ?? [];
   const counts = data?.counts;
+
+  const exportRows = rows.map((r) => ({
+    waktu: formatWaktu(r.created_at),
+    user: r.user_nama ?? "-",
+    role: ROLE_LABEL[r.user_role ?? ""] ?? r.user_role ?? "-",
+    aksi: r.aksi,
+    modul: r.modul,
+    detail: r.detail ?? "-",
+    ip: r.ip_address ?? "-",
+    browser: r.browser ?? "-",
+  }));
 
   const columns: Column<AuditRow>[] = [
     { header: "Waktu", sortValue: (r) => new Date(r.created_at).getTime(), cell: (r) => <span className="text-slate-500 whitespace-nowrap">{formatWaktu(r.created_at)}</span> },
@@ -138,17 +132,12 @@ export function AuditList() {
         title="Audit Log"
         subtitle="Riwayat aktivitas seluruh pengguna sistem"
         actions={
-          <>
-            <Button variant="outline" onClick={() => window.print()}>
-              <Printer className="w-4 h-4" /> PDF
-            </Button>
-            <Button variant="outline" onClick={() => downloadCSV(rows)}>
-              <Download className="w-4 h-4" /> Excel
-            </Button>
-            <Button variant="outline" onClick={() => downloadCSV(rows)}>
-              <Download className="w-4 h-4" /> CSV
-            </Button>
-          </>
+          <DataToolbar
+            rows={exportRows}
+            columns={EXPORT_COLUMNS}
+            filename="audit-log"
+            title="Audit Log"
+          />
         }
       />
 

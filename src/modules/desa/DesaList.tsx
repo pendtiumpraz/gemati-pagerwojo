@@ -29,6 +29,20 @@ import { Drawer, TabsAktifSampah } from "@/components/ui/Drawer";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch, useList } from "@/lib/useApi";
+import { DataToolbar } from "@/components/ui/DataToolbar";
+import { IMPORT_FIELDS } from "@/lib/import-configs";
+
+const EXPORT_COLUMNS = [
+  { key: "nama", header: "Nama Desa" },
+  { key: "kecamatan", header: "Kecamatan" },
+  { key: "balita", header: "Balita" },
+  { key: "pendampingan", header: "Pendampingan" },
+  { key: "valid", header: "Valid" },
+  { key: "persentase", header: "Persentase" },
+  { key: "risiko_stunting", header: "Risiko Stunting" },
+  { key: "rata_bb", header: "Rata-rata BB" },
+  { key: "rata_tb", header: "Rata-rata TB" },
+];
 
 type DesaAgg = {
   id: number;
@@ -258,9 +272,18 @@ export function DesaList() {
         title="Data Desa"
         subtitle="Master data desa di Kecamatan Pagerwojo"
         actions={
-          <Button onClick={openAdd}>
-            <Plus className="w-4 h-4" /> Tambah Desa
-          </Button>
+          <>
+            <DataToolbar
+              rows={rows}
+              columns={EXPORT_COLUMNS}
+              filename="data-desa"
+              title="Data Desa"
+              importConfig={{ entity: "desa", fields: IMPORT_FIELDS["desa"], onDone: reloadAll }}
+            />
+            <Button onClick={openAdd}>
+              <Plus className="w-4 h-4" /> Tambah Desa
+            </Button>
+          </>
         }
       />
 

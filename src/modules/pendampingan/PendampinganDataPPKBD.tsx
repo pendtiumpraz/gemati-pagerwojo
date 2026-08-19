@@ -4,7 +4,19 @@ import { PageHeader, Card, Badge, LABEL_VALIDASI } from "@/components/ui/primiti
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { useList } from "@/lib/useApi";
 import { formatTanggal } from "@/lib/utils";
+import { DataToolbar } from "@/components/ui/DataToolbar";
 import type { PendampinganRow } from "./PendampinganList";
+
+const EXPORT_COLUMNS = [
+  { key: "tanggal", header: "Tanggal" },
+  { key: "balita_nama", header: "Balita" },
+  { key: "hari_ke", header: "Hari" },
+  { key: "makan_telur", header: "Makan Telur" },
+  { key: "jam", header: "Jam" },
+  { key: "nama_pendamping", header: "Pendamping" },
+  { key: "keterangan", header: "Keterangan" },
+  { key: "validasi_status", header: "Validasi" },
+];
 
 export function PendampinganDataPPKBD() {
   const { data, loading } = useList<{ data: PendampinganRow[] }>(
@@ -51,7 +63,18 @@ export function PendampinganDataPPKBD() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Data Pendampingan" subtitle="Seluruh data pendampingan di desa Anda" />
+      <PageHeader
+        title="Data Pendampingan"
+        subtitle="Seluruh data pendampingan di desa Anda"
+        actions={
+          <DataToolbar
+            rows={rows}
+            columns={EXPORT_COLUMNS}
+            filename="data-pendampingan"
+            title="Data Pendampingan"
+          />
+        }
+      />
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-4 text-primary">
           <Egg className="w-5 h-5" />
