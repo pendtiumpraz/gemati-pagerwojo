@@ -24,17 +24,15 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = await readSession(req);
 
-  // halaman publik
-  if (PUBLIC.includes(pathname)) {
-    if (session) return NextResponse.redirect(new URL("/dashboard", req.url));
+  // Landing page publik untuk semua (baik login maupun belum)
+  if (pathname === "/") {
     return NextResponse.next();
   }
 
-  // root → dashboard/login
-  if (pathname === "/") {
-    return NextResponse.redirect(
-      new URL(session ? "/dashboard" : "/login", req.url)
-    );
+  // halaman publik (login) — arahkan ke dashboard bila sudah login
+  if (PUBLIC.includes(pathname)) {
+    if (session) return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.next();
   }
 
   // butuh login
