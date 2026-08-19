@@ -22,13 +22,24 @@ function build(): unknown {
     return drizzle(neon(cfg.pgUrl), { schema: pgSchema });
   }
   if (engine === "postgres") {
-    if (!cfg.pgUrl) throw new Error("Koneksi Postgres tidak ditemukan (DATABASE_URL / PGHOST)");
+    if (!cfg.pgUrl && !cfg.pg)
+      throw new Error("Koneksi Postgres tidak ditemukan (DATABASE_URL atau PGHOST/PGUSER/...)");
     const { Pool } = require("pg");
     const { drizzle } = require("drizzle-orm/node-postgres");
-    const pool = new Pool({
-      connectionString: cfg.pgUrl,
-      ssl: cfg.pgSsl ? { rejectUnauthorized: false } : undefined,
-    });
+    const poolCfg = cfg.pg
+      ? {
+          host: cfg.pg.host,
+          port: cfg.pg.port,
+          user: cfg.pg.user,
+          password: cfg.pg.password,
+          database: cfg.pg.database,
+          ssl: cfg.pg.ssl ? { rejectUnauthorized: false } : undefined,
+        }
+      : {
+          connectionString: cfg.pgUrl,
+          ssl: cfg.pgSsl ? { rejectUnauthorized: false } : undefined,
+        };
+    const pool = new Pool(poolCfg);
     return drizzle(pool, { schema: pgSchema });
   }
   // mysql

@@ -59,8 +59,17 @@ export function getDbEngine(): DbEngine {
 export type DbConnection = {
   engine: DbEngine;
   deploy: DeployTarget;
-  pgUrl?: string; // untuk neon & postgres
+  pgUrl?: string; // untuk neon & postgres (via connection string)
   pgSsl?: boolean;
+  pg?: {
+    // untuk postgres via field terpisah (aman untuk password berkarakter spesial)
+    host: string;
+    port: number;
+    user: string;
+    password: string;
+    database: string;
+    ssl?: boolean;
+  };
   mysql?: {
     host: string;
     port: number;
@@ -109,16 +118,27 @@ export function getDbConfig(): DbConnection {
 
   // neon / postgres
   const pgUrl =
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    (process.env.PGHOST
-      ? `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT || 5432}/${process.env.PGDATABASE}`
-      : undefined);
+    process.env.DATABASE_URL || process.env.POSTGRES_URL || undefined;
+
+  // Postgres via field terpisah (PGHOST/...) — dipakai bila tak ada URL.
+  // Aman untuk password berkarakter spesial (tanpa perlu URL-encode).
+  const pg =
+    engine === "postgres" && !pgUrl && process.env.PGHOST
+      ? {
+          host: process.env.PGHOST,
+          port: Number(process.env.PGPORT || 5432),
+          user: process.env.PGUSER || "",
+          password: process.env.PGPASSWORD || "",
+          database: process.env.PGDATABASE || "",
+          ssl: process.env.PGSSL === "true",
+        }
+      : undefined;
+
   const pgSsl =
     engine === "neon" ||
     /sslmode=require/.test(pgUrl || "") ||
     process.env.PGSSL === "true";
-  return { engine, deploy, pgUrl, pgSsl };
+  return { engine, deploy, pgUrl, pgSsl, pg };
 }
 
 /** Tulis pilihan deploy/engine ke file config (dipakai Superadmin). Hanya non-secret. */
