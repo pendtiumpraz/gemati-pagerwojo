@@ -24,10 +24,12 @@ export type TestConnResult = {
 /** Uji koneksi ke database dengan config yang diberikan (koneksi sekali pakai, tidak dipersist). */
 export async function testConnection(input: TestConnInput): Promise<TestConnResult> {
   const start = Date.now();
+  // require runtime yang tak dianalisis webpack (driver DB dimuat sesuai engine)
+  const load = (m: string): any => (eval("require") as NodeRequire)(m);
   try {
     if (input.engine === "neon") {
       if (!input.url) return { ok: false, message: "URL koneksi Neon kosong" };
-      const { neon } = require("@neondatabase/serverless");
+      const { neon } = load("@neondatabase/serverless");
       const sql = neon(input.url);
       const rows = await sql`select version() as v`;
       return { ok: true, message: "Koneksi Neon berhasil", version: rows?.[0]?.v, ms: Date.now() - start };
@@ -35,7 +37,7 @@ export async function testConnection(input: TestConnInput): Promise<TestConnResu
 
     if (input.engine === "postgres") {
       if (!input.url) return { ok: false, message: "URL/host Postgres kosong" };
-      const { Client } = require("pg");
+      const { Client } = load("pg");
       const client = new Client({
         connectionString: input.url,
         ssl: input.ssl ? { rejectUnauthorized: false } : undefined,
@@ -48,7 +50,7 @@ export async function testConnection(input: TestConnInput): Promise<TestConnResu
     }
 
     // mysql
-    const mysql = require("mysql2/promise");
+    const mysql = load("mysql2/promise");
     const conn = await mysql.createConnection({
       host: input.host || "127.0.0.1",
       port: input.port || 3306,

@@ -15,17 +15,21 @@ export const engine: DbEngine = cfg.engine;
 const g = globalThis as unknown as { __gematiDb?: unknown };
 
 function build(): unknown {
+  // require runtime yang TIDAK dianalisis webpack — driver DB dimuat sesuai engine aktif,
+  // sehingga build tak gagal walau driver engine lain tak terpasang.
+  const load = (m: string): any => (eval("require") as NodeRequire)(m);
+
   if (engine === "neon") {
     if (!cfg.pgUrl) throw new Error("DATABASE_URL (Neon) tidak ditemukan di environment");
-    const { neon } = require("@neondatabase/serverless");
-    const { drizzle } = require("drizzle-orm/neon-http");
+    const { neon } = load("@neondatabase/serverless");
+    const { drizzle } = load("drizzle-orm/neon-http");
     return drizzle(neon(cfg.pgUrl), { schema: pgSchema });
   }
   if (engine === "postgres") {
     if (!cfg.pgUrl && !cfg.pg)
       throw new Error("Koneksi Postgres tidak ditemukan (DATABASE_URL atau PGHOST/PGUSER/...)");
-    const { Pool } = require("pg");
-    const { drizzle } = require("drizzle-orm/node-postgres");
+    const { Pool } = load("pg");
+    const { drizzle } = load("drizzle-orm/node-postgres");
     const poolCfg = cfg.pg
       ? {
           host: cfg.pg.host,
@@ -44,8 +48,8 @@ function build(): unknown {
   }
   // mysql
   const m = cfg.mysql!;
-  const mysql = require("mysql2/promise");
-  const { drizzle } = require("drizzle-orm/mysql2");
+  const mysql = load("mysql2/promise");
+  const { drizzle } = load("drizzle-orm/mysql2");
   const pool = mysql.createPool({
     host: m.host,
     port: m.port,
